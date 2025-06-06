@@ -1,16 +1,16 @@
 <template>
-  <div class="register-container">
-    <div class="register-box">
-      <div class="register-header">
-        <h1 class="app-title">叨叨账本</h1>
-        <p class="app-desc">AI智能记账助手</p>
+  <div class="auth-container">
+    <div class="auth-box">
+      <div class="auth-header">
+        <h1 class="auth-title">注册账号</h1>
+        <p class="auth-subtitle">加入叨叨账本，让理财更轻松</p>
       </div>
 
       <el-form
         ref="registerFormRef"
         :model="registerForm"
         :rules="registerRules"
-        class="register-form"
+        class="auth-form"
         @submit.prevent="handleRegister"
       >
         <el-form-item prop="username">
@@ -19,6 +19,7 @@
             placeholder="用户名"
             prefix-icon="User"
             clearable
+            class="auth-input"
           />
         </el-form-item>
 
@@ -28,6 +29,7 @@
             placeholder="邮箱"
             prefix-icon="Message"
             clearable
+            class="auth-input"
           />
         </el-form-item>
 
@@ -37,6 +39,7 @@
             placeholder="密码"
             prefix-icon="Lock"
             show-password
+            class="auth-input"
           />
         </el-form-item>
 
@@ -47,24 +50,25 @@
             prefix-icon="Lock"
             show-password
             @keyup.enter="handleRegister"
+            class="auth-input"
           />
         </el-form-item>
 
-        <div class="register-options">
-          <router-link to="/login" class="login-link">已有账号？去登录</router-link>
+        <div class="auth-options">
+          <router-link to="/login" class="auth-link">已有账号？去登录</router-link>
         </div>
 
         <el-button
           type="primary"
           :loading="loading"
-          class="register-button"
+          class="auth-button"
           @click="handleRegister"
         >
           注册
         </el-button>
       </el-form>
 
-      <div class="register-footer">
+      <div class="auth-footer">
         <p>© {{ new Date().getFullYear() }} 叨叨账本 - 更轻松的记账方式</p>
       </div>
     </div>
@@ -77,6 +81,7 @@ import { useRouter } from "vue-router";
 import { useUserStore } from "../store/user";
 import { User, Lock, Message } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
+import '../assets/owl-theme.css';
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -146,67 +151,18 @@ const handleRegister = async () => {
 };
 </script>
 
-<style scoped>
-.register-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background-color: var(--background-color);
+<style>
+/* 注册页面特有样式 */
+.auth-box {
+  max-width: 450px;
 }
 
-.register-box {
-  width: 360px;
-  padding: 30px;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+/* 自定义错误提示样式 */
+:deep(.el-form-item.is-error .el-input__wrapper) {
+  border-color: #F56C6C !important;
 }
 
-.register-header {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.app-title {
-  font-size: 28px;
-  color: var(--primary-color);
-  margin-bottom: 10px;
-}
-
-.app-desc {
-  color: var(--text-secondary);
-  font-size: 16px;
-}
-
-.register-form {
-  margin-bottom: 20px;
-}
-
-.register-options {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.login-link {
-  color: var(--primary-color);
-  text-decoration: none;
-}
-
-.login-link:hover {
-  text-decoration: underline;
-}
-
-.register-button {
-  width: 100%;
-}
-
-.register-footer {
-  text-align: center;
-  margin-top: 20px;
-  color: var(--text-secondary);
-  font-size: 12px;
+:deep(.el-form-item__error) {
+  color: #F56C6C;
 }
 </style> 

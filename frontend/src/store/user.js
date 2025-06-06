@@ -63,11 +63,14 @@ export const useUserStore = defineStore('user', () => {
     const user = ref(null)
     const token = ref(sessionStorage.getItem('token') || localStorage.getItem('token') || '')
     const loading = ref(false)
+    const error = ref(null)
 
     const isLoggedIn = computed(() => !!token.value)
+    const username = computed(() => user.value?.username || '未登录')
 
     async function login(username, password, rememberMe = false) {
         loading.value = true
+        error.value = null
         try {
             const formData = new FormData()
             formData.append('username', username)
@@ -98,6 +101,12 @@ export const useUserStore = defineStore('user', () => {
             return true
         } catch (error) {
             console.error('登录失败:', error)
+            error.value = error.response?.data?.detail || '登录失败，请检查用户名和密码'
+            user.value = null
+            token.value = ''
+            localStorage.removeItem('token')
+            localStorage.removeItem('rememberMe')
+            sessionStorage.removeItem('token')
             return false
         } finally {
             loading.value = false
@@ -106,16 +115,19 @@ export const useUserStore = defineStore('user', () => {
 
     async function register(username, email, password) {
         loading.value = true
+        error.value = null
         try {
             const response = await api.post('/users/register', {
                 username,
                 email,
                 password
             })
-            return response.data
+            await login(username, password, true)
+            return true
         } catch (error) {
             console.error('注册失败:', error)
-            throw error
+            error.value = error.response?.data?.detail || '注册失败，请稍后再试'
+            return false
         } finally {
             loading.value = false
         }
@@ -194,7 +206,9 @@ export const useUserStore = defineStore('user', () => {
         user,
         token,
         loading,
+        error,
         isLoggedIn,
+        username,
         login,
         register,
         fetchUserInfo,

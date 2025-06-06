@@ -1,75 +1,60 @@
 <template>
-  <div class="app-container">
-    <el-config-provider :locale="zhCn">
-      <router-view v-if="isReady" />
-      <div v-else class="loading-container">
-        <el-icon class="loading-icon"><Loading /></el-icon>
-        <p>加载中...</p>
+  <el-config-provider>
+    <div class="app-container">
+      <div v-if="initializing" class="loading-container">
+        <div class="loader"></div>
+        <div class="loading-text">加载中，请稍候...</div>
       </div>
-    </el-config-provider>
-  </div>
+      <router-view v-else />
+    </div>
+  </el-config-provider>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import { ElConfigProvider } from "element-plus";
-import { Loading } from "@element-plus/icons-vue";
-import zhCn from "element-plus/dist/locale/zh-cn.mjs";
-import { useUserStore } from "./store/user";
+import { ref, onMounted } from 'vue';
+import { useUserStore } from './store/user';
+import { useRouter } from 'vue-router';
 
-const isReady = ref(false);
+const initializing = ref(true);
 const userStore = useUserStore();
+const router = useRouter();
 
+// 非阻塞方式检查认证状态
 onMounted(async () => {
-  console.log('[App] 应用启动，检查认证状态...');
+  console.log('[App] 组件挂载，初始化认证状态检查开始');
+  
   try {
-    // Check if token exists in any storage
-    const sessionToken = sessionStorage.getItem('token');
-    const localToken = localStorage.getItem('token');
-    const hasToken = !!localToken || !!sessionToken;
+    // 只有在有token的情况下才尝试获取用户信息
+    const hasToken = localStorage.getItem('token') || sessionStorage.getItem('token');
     
     if (hasToken) {
-      console.log('[App] 找到token，尝试恢复会话...');
-      // Ensure token is synchronized between storages
-      if (sessionToken && !localToken && localStorage.getItem('rememberMe') === 'true') {
-        console.log('[App] 将sessionStorage中的token同步到localStorage');
-        localStorage.setItem('token', sessionToken);
-      } else if (localToken && !sessionToken) {
-        console.log('[App] 将localStorage中的token同步到sessionStorage');
-        sessionStorage.setItem('token', localToken);
-      }
-      
+      console.log('[App] 发现token，尝试获取用户信息');
       await userStore.checkAuth();
-      console.log('[App] 认证状态检查完成，用户状态:', userStore.isLoggedIn ? '已登录' : '未登录');
+      
+      if (userStore.isLoggedIn) {
+        console.log('[App] 认证成功，用户:', userStore.username);
+      } else {
+        console.log('[App] 认证失败，将在需要时重定向到登录页面');
+        // 让router.beforeEach处理重定向
+      }
     } else {
-      console.log('[App] 未找到token，用户未登录');
+      console.log('[App] 未找到token，用户未登录状态');
     }
   } catch (error) {
-    console.error('[App] 检查认证状态时出错:', error);
+    console.error('[App] 初始认证检查出错:', error);
   } finally {
-    // 无论成功失败都标记为已准备好，因为路由会处理未登录状态
-    isReady.value = true;
+    // 完成初始化
+    initializing.value = false;
+    console.log('[App] 初始化完成，解除加载状态');
   }
 });
 </script>
 
-<style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-html,
-body {
-  height: 100%;
-  width: 100%;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-}
-
+<style scoped>
 .app-container {
-  height: 100vh;
-  width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .loading-container {
@@ -77,21 +62,27 @@ body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 100%;
+  min-height: 100vh;
+  background-color: #F0FBF7;
 }
 
-.loading-icon {
-  font-size: 48px;
-  color: #409eff;
-  animation: rotating 2s linear infinite;
+.loader {
+  width: 60px;
+  height: 60px;
+  border: 5px solid #A7E0C7;
+  border-radius: 50%;
+  border-top-color: #5DAF8E;
+  animation: spin 1s infinite ease-in-out;
+  margin-bottom: 20px;
 }
 
-@keyframes rotating {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.loading-text {
+  color: #3D6E59;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style> 

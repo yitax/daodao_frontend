@@ -1,0 +1,27 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- 头部圆形 -->
+  <circle cx="32" cy="30" r="28" fill="#5DAF8E" />
+  
+  <!-- 面部区域 -->
+  <ellipse cx="32" cy="32" rx="22" ry="20" fill="#F0F8F5" />
+  
+  <!-- 耳朵 -->
+  <path d="M 14 14 L 24 8 L 28 16 Z" fill="#3D6E59" />
+  <path d="M 50 14 L 40 8 L 36 16 Z" fill="#3D6E59" />
+  
+  <!-- 眼睛 -->
+  <g class="eyes">
+    <!-- 左眼 -->
+    <circle cx="24" cy="28" r="7" fill="white" />
+    <circle cx="24" cy="28" r="5" fill="#3D6E59" />
+    <circle cx="22" cy="26" r="2" fill="white" />
+    
+    <!-- 右眼 -->
+    <circle cx="40" cy="28" r="7" fill="white" />
+    <circle cx="40" cy="28" r="5" fill="#3D6E59" />
+    <circle cx="38" cy="26" r="2" fill="white" />
+  </g>
+  
+  <!-- 嘴巴 -->
+  <path d="M 28 37 Q 32 41, 36 37" fill="#FFA5D8" />
+</svg> 

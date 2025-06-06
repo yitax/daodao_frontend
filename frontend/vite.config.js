@@ -13,23 +13,33 @@ export default defineConfig({
     server: {
         port: 5173,
         open: true,
+        base: '/',
         proxy: {
-            '/reports': {
+            '/api/reports': {
                 target: 'http://localhost:8000',
-                changeOrigin: true
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/api/, '')
             },
-            '/users': {
+            '/api/users': {
                 target: 'http://localhost:8000',
-                changeOrigin: true
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/api/, '')
             },
-            '/transactions': {
+            '/api/transactions': {
                 target: 'http://localhost:8000',
-                changeOrigin: true
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/api/, '')
             },
-            '/chat': {
+            '/api/chat': {
                 target: 'http://localhost:8000',
-                changeOrigin: true
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/api/, '')
             }
-        }
+        },
+        historyApiFallback: true
+    },
+    build: {
+        outDir: 'dist',
+        assetsDir: 'assets',
     }
 }) 

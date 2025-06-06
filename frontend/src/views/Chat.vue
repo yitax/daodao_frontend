@@ -4,7 +4,13 @@
       <div class="personality-selector">
         <el-dropdown @command="changePersonality">
           <span class="personality-display">
-            <el-avatar :size="20" :icon="getPersonalityIcon(currentPersonality)" class="personality-avatar" />
+            <el-avatar 
+              :size="20" 
+              :style="{ backgroundColor: getPersonalityIcon(currentPersonality).color }"
+              class="personality-avatar"
+            >
+              <el-icon><component :is="getPersonalityIcon(currentPersonality).icon" /></el-icon>
+            </el-avatar>
             {{ currentPersonality.name }}
             <el-icon class="el-icon--right"><arrow-down /></el-icon>
           </span>
@@ -16,7 +22,12 @@
                 :command="personality.id"
               >
                 <div class="dropdown-personality-item">
-                  <el-avatar :size="20" :icon="getPersonalityIcon(personality)" />
+                  <el-avatar 
+                    :size="20" 
+                    :style="{ backgroundColor: getPersonalityIcon(personality).color }"
+                  >
+                    <el-icon><component :is="getPersonalityIcon(personality).icon" /></el-icon>
+                  </el-avatar>
                   <span>{{ personality.name }}</span>
                   <span class="personality-type">{{ personality.personality_type }}</span>
                 </div>
@@ -61,9 +72,17 @@
           >
             <div class="message-avatar">
               <el-avatar
-                :icon="msg.is_user ? User : getPersonalityIcon(currentPersonality)"
+                v-if="msg.is_user"
                 :size="40"
+                :icon="User"
               />
+              <el-avatar
+                v-else
+                :size="40"
+                :style="{ backgroundColor: getPersonalityIcon(currentPersonality).color }"
+              >
+                <el-icon><component :is="getPersonalityIcon(currentPersonality).icon" /></el-icon>
+              </el-avatar>
             </div>
             <div class="message-content">
               <div class="message-bubble">
@@ -205,12 +224,45 @@
         @keyup.enter="sendMessage"
         clearable
       >
+        <template #prepend>
+          <div class="image-upload-btn">
+            <input
+              type="file"
+              ref="fileInput"
+              accept="image/*"
+              class="file-input"
+              @change="handleImageUpload"
+            />
+            <el-tooltip content="上传交易凭证图片识别" placement="top">
+              <el-button :disabled="loading" @click="triggerFileInput">
+                <el-icon><Picture /></el-icon>
+              </el-button>
+            </el-tooltip>
+          </div>
+        </template>
         <template #append>
           <el-button :loading="loading" @click="sendMessage">
             <el-icon><Message /></el-icon>
           </el-button>
         </template>
       </el-input>
+      
+      <!-- 图片预览和识别 -->
+      <div v-if="uploadedImage" class="image-preview-container">
+        <div class="image-preview-header">
+          <span>图片识别中</span>
+          <el-button type="text" @click="cancelImageUpload">
+            <el-icon><Close /></el-icon>
+          </el-button>
+        </div>
+        <div class="image-preview">
+          <img :src="uploadedImage" alt="上传的图片" />
+          <div v-if="imageLoading" class="image-processing-overlay">
+            <div class="loading-spinner"></div>
+            <span>正在识别...</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -230,11 +282,15 @@ import {
   Document,
   Briefcase,
   StarFilled,
+  Picture,
+  Close,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import axios from "axios";
+import { useRouter } from "vue-router";
 
 const userStore = useUserStore();
+const router = useRouter();
 
 // Use the API instance from userStore
 const axiosInstance = axios.create({
@@ -255,6 +311,27 @@ axiosInstance.interceptors.request.use(config => {
   }
   return config;
 });
+
+// Add response interceptor for error handling
+axiosInstance.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response) {
+      // Method Not Allowed (likely direct browser access to API)
+      if (error.response.status === 405) {
+        console.error("API访问方法错误，可能是直接访问了后端API地址");
+      }
+      
+      // Unauthorized - redirect to login
+      if (error.response.status === 401) {
+        const userStore = useUserStore();
+        userStore.logout();
+        router.push('/login');
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 const messagesContainer = ref(null);
 const inputMessage = ref("");
@@ -283,15 +360,58 @@ const currentPersonality = computed(() => {
 
 // 根据助手信息获取图标
 const getPersonalityIcon = (personality) => {
-  if (!personality) return 'User';
+  if (!personality) return User;
   
-  switch(personality.personality_type) {
-    case '严谨高效型': return Document;
-    case '温柔体贴型': return ChatDotRound;
-    case '俏皮幽默型': return StarFilled;
-    case '简洁利落型': return Briefcase;
-    case '鼓励打气型': return Calendar;
-    default: return User;
+  // 根据助手名称和类型返回对应图标
+  switch(personality.name) {
+    case '睿记': return {
+      icon: Document,
+      color: '#2E5E4E' // 深绿色，专业感
+    };
+    case '小暖': return {
+      icon: ChatDotRound,
+      color: '#F08C7A' // 温暖的珊瑚色
+    };
+    case '乐豆': return {
+      icon: StarFilled,
+      color: '#F7C242' // 活泼的黄色
+    };
+    case '简': return {
+      icon: Briefcase,
+      color: '#687C97' // 简约的蓝灰色
+    };
+    case '启航': return {
+      icon: Calendar,
+      color: '#6A8D73' // 积极的绿色
+    };
+    default:
+      // 根据性格类型作为备选分类
+      switch(personality.personality_type) {
+        case '严谨高效型': return {
+          icon: Document,
+          color: '#2E5E4E'
+        };
+        case '温柔体贴型': return {
+          icon: ChatDotRound,
+          color: '#F08C7A'
+        };
+        case '俏皮幽默型': return {
+          icon: StarFilled,
+          color: '#F7C242'
+        };
+        case '简洁利落型': return {
+          icon: Briefcase,
+          color: '#687C97'
+        };
+        case '鼓励打气型': return {
+          icon: Calendar,
+          color: '#6A8D73'
+        };
+        default: return {
+          icon: User,
+          color: '#409EFF' // 默认蓝色
+        };
+      }
   }
 };
 
@@ -487,6 +607,7 @@ const confirmTransaction = async () => {
   try {
     // 确保所有数据都正确格式化
     console.log("[Chat] 提交前检查交易数据...");
+    console.log("[Chat] extractedInfo原始数据:", JSON.parse(JSON.stringify(extractedInfo)));
     
     // 1. 使用小写类型，和后端中枚举定义的值匹配 
     let type = extractedInfo.type.toLowerCase();
@@ -563,24 +684,12 @@ const confirmTransaction = async () => {
             // id: confirmedTxDetailsFromBackend.id // if backend sends transaction id in this sub-object
          };
          messages.value[aiMessageIndex].transaction_details = null; // Clear pending details
-         // Optionally, update the AI message content itself if needed
-         // messages.value[aiMessageIndex].content = "交易已确认，记录如下："; 
     } else {
           console.error("[Chat] AI Message at index", aiMessageIndex, "was unexpectedly undefined during transaction confirmation.");
     }
 
     showConfirmation.value = false;
     pendingTransactionMessageId.value = null;
-
-      // Optionally, add a new, separate AI confirmation message from the bot
-      // This might be redundant if the original message is updated clearly.
-      // messages.value.push({
-      //   id: Date.now(),
-      //   content: `好的，已为您记录一笔${confirmedTxDetailsFromBackend.type === 'income' ? '收入' : '支出'}：${confirmedTxDetailsFromBackend.description}，金额 ${confirmedTxDetailsFromBackend.amount}元。详情请在总账单中查看。`,
-      //   is_user: false,
-      //   created_at: new Date().toISOString(),
-      // });
-      // scrollToBottom();
 
       console.log("[Chat] 交易已确认并更新UI. Messages:", JSON.parse(JSON.stringify(messages.value)));
     } else {
@@ -643,6 +752,14 @@ const scrollToBottom = () => {
 const fetchChatHistory = async () => {
   try {
     console.log("获取聊天历史...");
+    // 尝试从sessionStorage获取token，确保已经登录
+    const sessionToken = sessionStorage.getItem('token');
+    const localToken = localStorage.getItem('token');
+    if (!sessionToken && !localToken) {
+      console.warn("[Chat] fetchChatHistory: 未找到token，用户可能未登录");
+      return;
+    }
+    
     const response = await axiosInstance.get("/chat/history");
     console.log("获取到聊天历史:", response.data.length, "条消息");
     // 为每个消息添加confirmedTransaction字段，确保兼容新结构
@@ -656,6 +773,14 @@ const fetchChatHistory = async () => {
     if (error.response) {
       console.error("响应状态:", error.response.status);
       console.error("响应数据:", error.response.data);
+      
+      // 处理认证失败的情况
+      if (error.response.status === 401) {
+        // 如果是认证问题，清除token并重定向到登录页面
+        userStore.logout();
+        router.push('/login');
+        ElMessage.error("登录已失效，请重新登录");
+      }
     }
   }
 };
@@ -664,6 +789,14 @@ const fetchChatHistory = async () => {
 const fetchPersonalities = async () => {
   try {
     console.log("获取AI性格列表...");
+    // 检查登录状态
+    const sessionToken = sessionStorage.getItem('token');
+    const localToken = localStorage.getItem('token');
+    if (!sessionToken && !localToken) {
+      console.warn("[Chat] fetchPersonalities: 未找到token，用户可能未登录");
+      return;
+    }
+    
     const response = await axiosInstance.get("/chat/personalities");
     console.log("获取到AI性格列表:", response.data);
     if (response.data.length > 0) {
@@ -692,6 +825,14 @@ const fetchPersonalities = async () => {
     console.error('获取助手列表失败，将使用默认助手列表:', error);
     personalities.value = [{ id: 1, name: '默认助手', personality_type: '默认类型' }];
     currentPersonalityId.value = 1;
+    
+    // 处理认证失败的情况
+    if (error.response && error.response.status === 401) {
+      // 如果是认证问题，清除token并重定向到登录页面
+      userStore.logout();
+      router.push('/login');
+      ElMessage.error("登录已失效，请重新登录");
+    }
   }
 };
 
@@ -701,10 +842,32 @@ watch(messages, scrollToBottom, { deep: true });
 onMounted(async () => {
   console.log("Chat.vue onMounted: 组件已挂载");
   scrollToBottom();
-  // 获取助手列表
-  await fetchPersonalities();
-  // 获取聊天历史
-  await fetchChatHistory();
+  
+  try {
+    // 确保用户已登录
+    if (!userStore.isLoggedIn) {
+      console.log("[Chat] onMounted: 用户未登录，尝试恢复会话");
+      await userStore.checkAuth();
+      
+      if (!userStore.isLoggedIn) {
+        console.warn("[Chat] onMounted: 用户认证失败，将重定向到登录页");
+        ElMessage.error("请先登录");
+        router.push('/login');
+        return;
+      }
+    }
+    
+    // 用户已登录，获取数据
+    console.log("[Chat] onMounted: 用户已登录，开始加载数据");
+    // 获取助手列表
+    await fetchPersonalities();
+    // 获取聊天历史
+    await fetchChatHistory();
+    
+  } catch (error) {
+    console.error("[Chat] onMounted 初始化错误:", error);
+    ElMessage.error("加载页面数据失败，请重试");
+  }
 });
 
 watch(
@@ -716,6 +879,106 @@ watch(
   }
   }
 );
+
+const fileInput = ref(null);
+const uploadedImage = ref(null);
+const imageLoading = ref(false);
+
+const handleImageUpload = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  imageLoading.value = true;
+  uploadedImage.value = URL.createObjectURL(file);
+
+  try {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    console.log("开始上传图片并识别...");
+    const response = await axiosInstance.post("/chat/image-recognition", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data"
+      }
+    });
+    console.log("图片识别API响应:", response.data);
+
+    if (response.data && response.data.extracted_info) {
+      const extractedData = response.data.extracted_info;
+      const aiMessageContent = response.data.message || "交易信息识别成功！";
+      
+      // 创建AI消息
+      const aiMsgId = Date.now();
+      const aiMessage = {
+        id: aiMsgId,
+        content: aiMessageContent,
+        is_user: false,
+        created_at: new Date().toISOString(),
+        transaction_details: extractedData,
+        confirmedTransaction: null,
+      };
+      
+      // 添加消息到聊天记录
+      messages.value.push(aiMessage);
+      scrollToBottom();
+      
+      // 如果需要确认，显示确认框
+      if (response.data.needs_confirmation) {
+        // 修正这里：正确填充确认表单数据
+        // 确保数据类型正确转换
+        Object.assign(extractedInfo, {
+          type: extractedData.type || "expense",
+          // 确保金额是数字类型
+          amount: typeof extractedData.amount === 'number' ? extractedData.amount : parseFloat(extractedData.amount) || 0,
+          date: extractedData.date || new Date().toISOString().split("T")[0],
+          description: extractedData.description || "",
+          category: extractedData.category || "未分类",
+        });
+        
+        console.log("提取的交易信息：", extractedData);
+        console.log("填充到表单的数据：", extractedInfo);
+        
+        // 显示确认框
+        pendingTransactionMessageId.value = aiMsgId;
+        showConfirmation.value = true;
+      }
+      
+      ElMessage.success("交易信息识别成功！");
+    } else {
+      ElMessage.warning("未能从图片中识别出交易信息，请尝试更清晰的图片。");
+    }
+  } catch (error) {
+    console.error("图片识别失败:", error);
+    ElMessage.error(`图片识别失败: ${error.response?.data?.detail || error.message || "请检查网络连接或重新上传"}`);
+    
+    // 添加错误消息
+    messages.value.push({
+      id: Date.now(),
+      content: "抱歉，图片识别失败，请确保图片清晰且包含交易信息，或尝试直接输入交易信息。",
+      is_user: false,
+      created_at: new Date().toISOString(),
+    });
+    scrollToBottom();
+  } finally {
+    imageLoading.value = false;
+    uploadedImage.value = null; // 关闭图片预览
+    // 清空文件输入框，以便可以重新选择相同的文件
+    if (fileInput.value) {
+      fileInput.value.value = "";
+    }
+  }
+};
+
+const cancelImageUpload = () => {
+  uploadedImage.value = null;
+  imageLoading.value = false;
+};
+
+const triggerFileInput = () => {
+  if (fileInput.value) {
+    fileInput.value.click();
+  }
+};
 
 </script>
 
@@ -752,13 +1015,25 @@ watch(
 }
 
 .personality-avatar {
-  margin-right: 4px;
+  margin-right: 8px;
+}
+
+.el-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .dropdown-personality-item {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.dropdown-personality-item .personality-type {
+  font-size: 12px;
+  color: #909399;
+  margin-left: auto;
 }
 
 .personality-type {
@@ -1113,6 +1388,143 @@ watch(
   }
   .chat-input-container {
     padding: 10px 15px;
+  }
+}
+
+.image-upload-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-upload-btn .el-button {
+  background-color: #F0FBF7;
+  color: #5DAF8E;
+  border: 1px solid #A7E0C7;
+  border-radius: 4px;
+  padding: 8px;
+  height: 40px;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  z-index: 2;
+  position: relative;
+}
+
+.image-upload-btn .el-button:hover {
+  background-color: #E8F6F0;
+  color: #3D6E59;
+  border-color: #5DAF8E;
+}
+
+.image-upload-btn .el-icon {
+  font-size: 18px;
+}
+
+.file-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1; /* 降低z-index，确保按钮在上层可以被点击 */
+}
+
+.image-preview-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.image-preview-header {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.image-preview-header .el-button {
+  position: absolute;
+  right: 20px;
+  color: white;
+  font-size: 20px;
+}
+
+.image-preview {
+  position: relative;
+  width: 90%;
+  max-width: 800px;
+  height: 80%;
+  max-height: 800px;
+  overflow: hidden;
+  border-radius: 12px;
+  background-color: white;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.image-processing-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  gap: 15px;
+}
+
+.image-processing-overlay span {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.loading-spinner {
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
   }
 }
 </style> 

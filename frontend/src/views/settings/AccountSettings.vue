@@ -20,20 +20,42 @@
       
       <el-divider />
       
-      <h3 class="section-title">修改密码</h3>
-      <p class="section-desc">更新您的账户密码</p>
+      <!-- 修改密码按钮 -->
+      <div v-if="!showPasswordForm" class="password-section">
+        <h3 class="section-title">密码管理</h3>
+        <p class="section-desc">您可以修改您的账户密码</p>
+        <el-button type="primary" @click="showPasswordForm = true">修改密码</el-button>
+      </div>
       
-      <el-form-item label="当前密码" prop="currentPassword">
-        <el-input v-model="passwords.currentPassword" type="password" show-password />
-      </el-form-item>
-      
-      <el-form-item label="新密码" prop="newPassword">
-        <el-input v-model="passwords.newPassword" type="password" show-password />
-      </el-form-item>
-      
-      <el-form-item label="确认新密码" prop="confirmPassword">
-        <el-input v-model="passwords.confirmPassword" type="password" show-password />
-      </el-form-item>
+      <!-- 密码修改表单，点击修改密码后显示 -->
+      <div v-if="showPasswordForm" class="password-section">
+        <h3 class="section-title">修改密码</h3>
+        <p class="section-desc">更新您的账户密码</p>
+        
+        <el-form 
+          :model="passwords" 
+          ref="passwordFormRef" 
+          :rules="passwordRules"
+          label-position="top"
+        >
+          <el-form-item label="当前密码" prop="currentPassword">
+            <el-input v-model="passwords.currentPassword" type="password" show-password />
+          </el-form-item>
+          
+          <el-form-item label="新密码" prop="newPassword">
+            <el-input v-model="passwords.newPassword" type="password" show-password />
+          </el-form-item>
+          
+          <el-form-item label="确认新密码" prop="confirmPassword">
+            <el-input v-model="passwords.confirmPassword" type="password" show-password />
+          </el-form-item>
+          
+          <el-form-item>
+            <el-button type="primary" @click="updatePassword" :loading="savingPassword">保存新密码</el-button>
+            <el-button @click="cancelPasswordUpdate">取消</el-button>
+          </el-form-item>
+        </el-form>
+      </div>
       
       <el-divider />
       
@@ -90,13 +112,17 @@ import { ref, reactive, computed, onMounted, watchEffect } from 'vue';
 import { useUserStore } from '../../store/user';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import axios from 'axios';
 
 const userStore = useUserStore();
 const router = useRouter();
 const formRef = ref(null);
+const passwordFormRef = ref(null);
 const saving = ref(false);
+const savingPassword = ref(false);
 const deleting = ref(false);
 const deleteDialogVisible = ref(false);
+const showPasswordForm = ref(false);
 
 const userInfo = reactive({
   username: '',
@@ -116,27 +142,34 @@ const deleteForm = reactive({
 
 // 验证两次输入的密码是否一致
 const validatePass = (rule, value, callback) => {
-  if (value !== passwords.newPassword) {
+  if (value === '') {
+    callback();
+  } else if (value !== passwords.newPassword) {
     callback(new Error('两次输入的密码不一致'));
   } else {
     callback();
   }
 };
 
+// 表单验证规则
 const rules = {
   email: [
     { required: true, message: '请输入邮箱地址', trigger: 'blur' },
     { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
-  ],
+  ]
+};
+
+// 密码表单验证规则
+const passwordRules = {
   currentPassword: [
-    { required: true, message: '请输入当前密码', trigger: 'blur' }
+    { required: true, message: '请输入当前密码', trigger: 'change' }
   ],
   newPassword: [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { required: true, message: '请输入新密码', trigger: 'change' },
     { min: 6, max: 20, message: '长度在 6 到 20 个字符之间', trigger: 'blur' }
   ],
   confirmPassword: [
-    { required: true, message: '请再次输入新密码', trigger: 'blur' },
+    { required: true, message: '请再次输入新密码', trigger: 'change' },
     { validator: validatePass, trigger: 'blur' }
   ]
 };
@@ -146,7 +179,7 @@ const canDelete = computed(() => {
   return deleteForm.password && deleteForm.confirmation === 'DELETE';
 });
 
-// Populate user info from store when component mounts or user data changes
+// 监听用户数据变更
 watchEffect(() => {
   if (userStore.user) {
     console.log('[AccountSettings] User data found in store:', userStore.user);
@@ -177,7 +210,7 @@ watchEffect(() => {
   }
 });
 
-// 保存设置
+// 保存账户设置
 const saveSettings = async () => {
   if (!formRef.value) return;
   
@@ -186,30 +219,126 @@ const saveSettings = async () => {
     
     saving.value = true;
     try {
-      // 检查是否需要更新密码
-      const updatePassword = passwords.currentPassword && passwords.newPassword;
+      console.log('准备保存账户设置...');
       
-      // 实际应用中应该调用API
-      // await userStore.api.put('/user/settings', {
-      //   email: userInfo.email,
-      //   update_password: updatePassword,
-      //   current_password: passwords.currentPassword,
-      //   new_password: passwords.newPassword
-      // });
+      // 检查和记录API URL
+      const apiURL = '/users/settings';
+      console.log('API请求URL:', apiURL);
+      console.log('将要发送的请求数据:', {email: userInfo.email});
       
-      ElMessage.success('保存成功');
+      // 创建一个axios实例，避免使用userStore.api
+      await axios.put(apiURL, {
+        email: userInfo.email
+      }, {
+        baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`
+        }
+      });
       
-      // 清空密码字段
-      passwords.currentPassword = '';
-      passwords.newPassword = '';
-      passwords.confirmPassword = '';
+      ElMessage.success('账户信息保存成功');
     } catch (error) {
       console.error('保存设置失败:', error);
+      console.error('错误响应数据:', error.response?.data);
+      console.error('错误状态码:', error.response?.status);
       ElMessage.error('保存失败，请稍后再试');
     } finally {
       saving.value = false;
     }
   });
+};
+
+// 更新密码
+const updatePassword = async () => {
+  if (!passwordFormRef.value) return;
+
+  await passwordFormRef.value.validate(async (valid) => {
+    if (!valid) {
+      ElMessage.warning('请正确填写所有密码字段');
+      return;
+    }
+    
+    savingPassword.value = true;
+    try {
+      console.log('准备修改密码...');
+      
+      // 检查和记录API URL
+      const apiURL = '/users/change-password';
+      console.log('API请求URL:', apiURL);
+      console.log('将要发送的请求数据:', {
+        current_password: passwords.currentPassword ? '******' : '(空)',
+        new_password: passwords.newPassword ? '******' : '(空)'
+      });
+
+      // 安全地获取baseURL
+      let fullURL = apiURL;
+      try {
+        const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+        fullURL = `${baseURL}${apiURL}`;
+        console.log('完整API URL:', fullURL);
+      } catch (err) {
+        console.log('无法构建完整URL，将使用相对路径:', apiURL);
+      }
+      
+      // 创建一个axios实例，避免使用userStore.api
+      const response = await axios.post(apiURL, {
+        current_password: passwords.currentPassword,
+        new_password: passwords.newPassword
+      }, {
+        baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`
+        }
+      });
+      
+      console.log('密码修改请求成功，响应数据:', response.data);
+      
+      ElMessage.success('密码修改成功');
+      
+      // 清空密码字段
+      passwords.currentPassword = '';
+      passwords.newPassword = '';
+      passwords.confirmPassword = '';
+      
+      // 隐藏密码修改表单
+      showPasswordForm.value = false;
+    } catch (error) {
+      console.error('密码修改失败详情:', error);
+      console.error('错误响应数据:', error.response?.data);
+      console.error('错误状态码:', error.response?.status);
+      
+      if (error.response) {
+        // 有服务器响应的错误
+        if (error.response.status === 400) {
+          ElMessage.error(error.response.data?.detail || '当前密码不正确');
+        } else if (error.response.status === 401) {
+          ElMessage.error('认证已过期，请重新登录');
+          userStore.logout();
+          router.push('/login');
+        } else {
+          ElMessage.error(`服务器错误 (${error.response.status}): ${error.response.data?.detail || '密码修改失败'}`);
+        }
+      } else if (error.request) {
+        // 请求发送但没有收到响应
+        ElMessage.error('无法连接到服务器，请检查网络连接');
+      } else {
+        // 请求设置时发生错误
+        ElMessage.error(`请求错误: ${error.message}`);
+      }
+    } finally {
+      savingPassword.value = false;
+    }
+  });
+};
+
+// 取消密码修改
+const cancelPasswordUpdate = () => {
+  passwords.currentPassword = '';
+  passwords.newPassword = '';
+  passwords.confirmPassword = '';
+  showPasswordForm.value = false;
 };
 
 // 显示删除账户对话框
@@ -236,10 +365,10 @@ const deleteAccount = async () => {
   
   deleting.value = true;
   try {
-    // 实际应用中应该调用API
-    // await userStore.api.delete('/user/account', {
-    //   data: { password: deleteForm.password }
-    // });
+    // 调用API删除账户
+    await userStore.api.delete('/users/account', {
+      data: { password: deleteForm.password }
+    });
     
     // 清除登录信息并返回登录页
     ElMessage.success('账户已删除');
@@ -304,5 +433,9 @@ onMounted(() => {
 .delete-account-dialog p {
   margin-bottom: 20px;
   color: var(--text-secondary);
+}
+
+.password-section {
+  margin-bottom: 20px;
 }
 </style> 

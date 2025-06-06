@@ -1,0 +1,14 @@
+<svg width="120" height="80" viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg">
+  <path d="M 30,50 
+           Q 20,50 20,40
+           Q 20,20 40,20
+           Q 50,5 70,20
+           Q 90,5 100,20
+           Q 110,20 110,30
+           Q 120,30 120,40
+           Q 120,50 110,50
+           Z" 
+        fill="#FFFFFF" 
+        opacity="0.9"
+        filter="drop-shadow(0 4px 6px rgba(93, 175, 142, 0.2))"/>
+</svg> 

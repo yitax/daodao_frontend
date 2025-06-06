@@ -1,0 +1,178 @@
+/* 简约绿色主题 - CSS变量 */
+:root {
+    /* 主色调 - 渐变绿色 */
+    --owl-primary: #5DAF8E;
+    --owl-primary-light: #A7E0C7;
+    --owl-primary-dark: #3D6E59;
+
+    /* 丰富的绿色变种 */
+    --owl-green-1: #4CAF50;
+    /* 鲜绿 */
+    --owl-green-2: #8BC34A;
+    /* 淡绿 */
+    --owl-green-3: #009688;
+    /* 青绿 */
+    --owl-green-4: #2E7D32;
+    /* 深绿 */
+    --owl-green-5: #DCEDC8;
+    /* 极浅绿 */
+
+    /* 辅助色 */
+    --owl-accent: #FF9800;
+    /* 橙色点缀 */
+    --owl-accent-light: #FFECB3;
+
+    /* 中性色 */
+    --owl-neutral-light: #F9FFFC;
+    --owl-neutral: #E8F5E9;
+
+    /* 文本颜色 */
+    --owl-text: #263238;
+    --owl-text-light: #546E7A;
+
+    /* 背景和边框 */
+    --owl-bg: #FFFFFF;
+    --owl-border: #E0E0E0;
+    --owl-shadow: 0 8px 16px rgba(76, 175, 80, 0.15);
+
+    /* 动画时间 */
+    --owl-transition: 0.3s ease;
+}
+
+/* 登录&注册容器 - 简约风格 */
+.auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    padding: 20px;
+}
+
+/* 表单框 - 简约风格 */
+.auth-box {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: var(--owl-shadow);
+    width: 100%;
+    max-width: 400px;
+    padding: 40px 30px;
+    position: relative;
+    z-index: 2;
+    overflow: hidden;
+    border-top: 4px solid var(--owl-primary);
+}
+
+/* 标题样式 */
+.auth-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.auth-header .app-logo {
+    width: 70px;
+    height: 70px;
+    margin-bottom: 15px;
+}
+
+.auth-title {
+    font-size: 28px;
+    color: var(--owl-primary-dark);
+    margin-bottom: 8px;
+    font-weight: 600;
+    background: linear-gradient(to right, var(--owl-primary-dark), var(--owl-primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.auth-subtitle {
+    color: var(--owl-text-light);
+    font-size: 16px;
+}
+
+/* 表单控件样式 */
+.auth-form {
+    margin-bottom: 20px;
+}
+
+/* 自定义按钮 */
+.auth-button {
+    width: 100%;
+    height: 48px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--owl-green-2), var(--owl-primary));
+    color: white;
+    font-size: 16px;
+    font-weight: 500;
+    border: none;
+    transition: all var(--owl-transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.auth-button:hover {
+    background: linear-gradient(135deg, var(--owl-green-2), var(--owl-green-3));
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+}
+
+/* 链接和次要选项 */
+.auth-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.auth-link {
+    color: var(--owl-primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all var(--owl-transition);
+}
+
+.auth-link:hover {
+    color: var(--owl-green-3);
+    text-decoration: underline;
+}
+
+.auth-checkbox {
+    color: var(--owl-text-light);
+}
+
+/* 页脚 */
+.auth-footer {
+    text-align: center;
+    color: var(--owl-text-light);
+    font-size: 12px;
+    margin-top: 20px;
+}
+
+/* 输入框样式 */
+.auth-input {
+    background-color: var(--owl-neutral-light);
+    border: 1px solid var(--owl-border);
+    border-radius: 6px;
+    transition: all var(--owl-transition);
+    padding: 12px 16px;
+}
+
+.auth-input:focus {
+    background-color: white;
+    border-color: var(--owl-primary);
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+}
+
+.auth-input-icon {
+    color: var(--owl-primary);
+}
+
+/* 响应式调整 */
+@media (max-width: 600px) {
+    .auth-box {
+        padding: 30px 20px;
+    }
+}

@@ -61,6 +61,19 @@ class PersonalityUpdate(BaseModel):
     personality_id: int
 
 
+class PasswordUpdate(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class UserSettingsUpdate(BaseModel):
+    email: Optional[str] = None
+
+
+class AccountDelete(BaseModel):
+    password: str
+
+
 # Helper functions
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -154,6 +167,108 @@ def login_for_access_token(
 @router.get("/me", response_model=UserResponse)
 def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.post("/change-password", status_code=status.HTTP_200_OK)
+def change_password(
+    password_update: PasswordUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """更改用户密码"""
+    print(f"\n======== 处理密码修改请求 - 用户ID: {current_user.id} ========")
+    print(f"用户名: {current_user.username}")
+    print(
+        f"收到新密码: {'*' * len(password_update.new_password) if password_update.new_password else '空'}"
+    )
+
+    # 验证当前密码是否正确
+    is_valid = verify_password(
+        password_update.current_password, current_user.hashed_password
+    )
+    print(f"当前密码验证结果: {'通过' if is_valid else '不正确'}")
+
+    if not is_valid:
+        print("返回错误: 当前密码不正确")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="当前密码不正确"
+        )
+
+    # 验证新密码长度
+    if len(password_update.new_password) < 6:
+        print("返回错误: 新密码长度不足")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="新密码长度不得少于6个字符"
+        )
+
+    # 更新密码
+    try:
+        hashed_password = get_password_hash(password_update.new_password)
+        print("已生成新的密码哈希")
+
+        current_user.hashed_password = hashed_password
+        db.commit()
+        print("密码已成功更新到数据库")
+
+        return {"message": "密码已成功更新"}
+    except Exception as e:
+        db.rollback()
+        print(f"密码更新失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"密码更新失败: {str(e)}",
+        )
+
+
+@router.put("/settings", response_model=Dict[str, Any])
+def update_user_settings(
+    settings: UserSettingsUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """更新用户设置"""
+    if settings.email is not None:
+        # 检查邮箱是否已被其他用户使用
+        existing_user = (
+            db.query(User)
+            .filter(User.email == settings.email, User.id != current_user.id)
+            .first()
+        )
+
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="该邮箱已被其他用户使用"
+            )
+
+        current_user.email = settings.email
+
+    db.commit()
+    return {"message": "用户设置已更新"}
+
+
+@router.delete("/account", status_code=status.HTTP_200_OK)
+def delete_user_account(
+    account_delete: AccountDelete,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """删除用户账户"""
+    # 验证密码是否正确
+    if not verify_password(account_delete.password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="密码不正确"
+        )
+
+    # 删除或禁用账户
+    # 在实际应用中，可能需要考虑软删除或处理关联数据
+    current_user.is_active = False
+    db.commit()
+
+    # 如果真的要物理删除账户：
+    # db.delete(current_user)
+    # db.commit()
+
+    return {"message": "账户已删除"}
 
 
 @router.get("/settings", response_model=UserSettings)

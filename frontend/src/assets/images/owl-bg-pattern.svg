@@ -1,0 +1,25 @@
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="smallGrid" width="10" height="10" patternUnits="userSpaceOnUse">
+      <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#A7E0C7" stroke-width="0.5" opacity="0.3"/>
+    </pattern>
+    <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
+      <rect width="100" height="100" fill="url(#smallGrid)"/>
+      <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#A7E0C7" stroke-width="1" opacity="0.3"/>
+    </pattern>
+  </defs>
+  
+  <rect width="100" height="100" fill="url(#grid)" />
+  
+  <!-- 小叶子装饰 -->
+  <path d="M 20 20 Q 25 15, 30 20 T 40 20" stroke="#5DAF8E" fill="none" stroke-width="1" opacity="0.5"/>
+  <path d="M 70 70 Q 75 65, 80 70 T 90 70" stroke="#5DAF8E" fill="none" stroke-width="1" opacity="0.5"/>
+  <path d="M 30 80 Q 35 75, 40 80 T 50 80" stroke="#5DAF8E" fill="none" stroke-width="1" opacity="0.5"/>
+  <path d="M 80 30 Q 85 25, 90 30 T 100 30" stroke="#5DAF8E" fill="none" stroke-width="1" opacity="0.5"/>
+  
+  <!-- 小圆点装饰 -->
+  <circle cx="15" cy="40" r="1.5" fill="#FFA5D8" opacity="0.6"/>
+  <circle cx="85" cy="60" r="1.5" fill="#FFA5D8" opacity="0.6"/>
+  <circle cx="60" cy="25" r="1.5" fill="#FFA5D8" opacity="0.6"/>
+  <circle cx="35" cy="75" r="1.5" fill="#FFA5D8" opacity="0.6"/>
+</svg> 

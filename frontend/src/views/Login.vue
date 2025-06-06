@@ -1,16 +1,16 @@
 <template>
-  <div class="login-container">
-    <div class="login-box">
-      <div class="login-header">
-        <h1 class="app-title">叨叨账本</h1>
-        <p class="app-desc">AI智能记账助手</p>
+  <div class="auth-container">
+    <div class="auth-box">
+      <div class="auth-header">
+        <h1 class="auth-title">叨叨账本</h1>
+        <p class="auth-subtitle">AI智能记账助手</p>
       </div>
 
       <el-form
         ref="loginFormRef"
         :model="loginForm"
         :rules="loginRules"
-        class="login-form"
+        class="auth-form"
         @submit.prevent="handleLogin"
       >
         <el-form-item prop="username">
@@ -19,6 +19,7 @@
             placeholder="用户名"
             prefix-icon="User"
             clearable
+            class="auth-input"
           />
         </el-form-item>
 
@@ -29,27 +30,26 @@
             prefix-icon="Lock"
             show-password
             @keyup.enter="handleLogin"
+            class="auth-input"
           />
         </el-form-item>
 
-        <div class="login-options">
-          <el-checkbox v-model="rememberMe">记住我</el-checkbox>
-          <router-link to="/register" class="register-link"
-            >注册账号</router-link
-          >
+        <div class="auth-options">
+          <el-checkbox v-model="rememberMe" class="auth-checkbox">记住我</el-checkbox>
+          <router-link to="/register" class="auth-link">注册账号</router-link>
         </div>
 
         <el-button
           type="primary"
           :loading="loading"
-          class="login-button"
+          class="auth-button"
           @click="handleLogin"
         >
           登录
         </el-button>
       </el-form>
 
-      <div class="login-footer">
+      <div class="auth-footer">
         <p>© {{ new Date().getFullYear() }} 叨叨账本 - 更轻松的记账方式</p>
       </div>
     </div>
@@ -62,6 +62,7 @@ import { useRouter, useRoute } from "vue-router";
 import { useUserStore } from "../store/user";
 import { User, Lock } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
+import '../assets/owl-theme.css';
 
 const router = useRouter();
 const route = useRoute();
@@ -121,67 +122,44 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
-.login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background-color: var(--background-color);
+<style>
+/* 自定义 Element Plus 组件样式 */
+:deep(.el-input__wrapper) {
+  background-color: var(--owl-neutral-light) !important;
+  border: 1px solid var(--owl-border) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  transition: all var(--owl-transition) !important;
 }
 
-.login-box {
-  width: 360px;
-  padding: 30px;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+:deep(.el-input__wrapper.is-focus) {
+  background-color: white !important;
+  border-color: var(--owl-primary) !important;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2) !important;
 }
 
-.login-header {
-  text-align: center;
-  margin-bottom: 30px;
+:deep(.el-input__prefix-inner) {
+  color: var(--owl-primary);
 }
 
-.app-title {
-  font-size: 28px;
-  color: var(--primary-color);
-  margin-bottom: 10px;
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: var(--owl-primary);
+  border-color: var(--owl-primary);
 }
 
-.app-desc {
-  color: var(--text-secondary);
+:deep(.el-button--primary) {
+  background: linear-gradient(135deg, var(--owl-green-2), var(--owl-primary));
+  border: none;
+  height: 48px;
+  border-radius: 6px;
   font-size: 16px;
+  font-weight: 500;
+  transition: all var(--owl-transition);
 }
 
-.login-form {
-  margin-bottom: 20px;
-}
-
-.login-options {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.register-link {
-  color: var(--primary-color);
-  text-decoration: none;
-}
-
-.register-link:hover {
-  text-decoration: underline;
-}
-
-.login-button {
-  width: 100%;
-}
-
-.login-footer {
-  text-align: center;
-  margin-top: 20px;
-  color: var(--text-secondary);
-  font-size: 12px;
+:deep(.el-button--primary:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+  background: linear-gradient(135deg, var(--owl-green-2), var(--owl-green-3));
 }
 </style> 

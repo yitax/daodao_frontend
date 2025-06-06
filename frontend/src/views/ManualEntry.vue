@@ -126,20 +126,26 @@
         <el-form-item label="类别">
           <el-select v-model="transactionForm.category" placeholder="选择类别" style="width: 100%">
             <el-option-group label="支出类别" v-if="transactionForm.type === 'expense'">
-              <el-option label="食品" value="食品"></el-option>
               <el-option label="餐饮美食" value="餐饮美食"></el-option>
-              <el-option label="交通" value="交通"></el-option>
-              <el-option label="住宿" value="住宿"></el-option>
-              <el-option label="娱乐" value="娱乐"></el-option>
-              <el-option label="购物" value="购物"></el-option>
-              <el-option label="医疗" value="医疗"></el-option>
-              <el-option label="其他" value="其他"></el-option>
+              <el-option label="交通出行" value="交通出行"></el-option>
+              <el-option label="服饰美容" value="服饰美容"></el-option>
+              <el-option label="日用百货" value="日用百货"></el-option>
+              <el-option label="住房物业" value="住房物业"></el-option>
+              <el-option label="医疗健康" value="医疗健康"></el-option>
+              <el-option label="文教娱乐" value="文教娱乐"></el-option>
+              <el-option label="人情往来" value="人情往来"></el-option>
+              <el-option label="其他支出" value="其他支出"></el-option>
             </el-option-group>
             <el-option-group label="收入类别" v-if="transactionForm.type === 'income'">
-              <el-option label="工资" value="工资"></el-option>
+              <el-option label="工资薪酬" value="工资薪酬"></el-option>
+              <el-option label="投资理财" value="投资理财"></el-option>
               <el-option label="奖金" value="奖金"></el-option>
-              <el-option label="投资" value="投资"></el-option>
               <el-option label="退款" value="退款"></el-option>
+              <el-option label="兼职收入" value="兼职收入"></el-option>
+              <el-option label="租金收入" value="租金收入"></el-option>
+              <el-option label="礼金收入" value="礼金收入"></el-option>
+              <el-option label="中奖收入" value="中奖收入"></el-option>
+              <el-option label="意外所得" value="意外所得"></el-option>
               <el-option label="其他收入" value="其他收入"></el-option>
             </el-option-group>
           </el-select>

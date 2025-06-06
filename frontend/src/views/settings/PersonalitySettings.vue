@@ -10,7 +10,12 @@
           @click="selectPersonality(personality.id)"
         >
           <div class="personality-icon">
-            <el-avatar :size="60" :icon="getPersonalityIcon(personality)" />
+            <el-avatar 
+              :size="60" 
+              :style="{ backgroundColor: getPersonalityIcon(personality).color }"
+            >
+              <el-icon><component :is="getPersonalityIcon(personality).icon" /></el-icon>
+            </el-avatar>
           </div>
           <div class="personality-info">
             <h4>{{ personality.name }}</h4>
@@ -30,39 +35,6 @@
         </el-card>
       </el-col>
     </el-row>
-    
-    <div class="settings-form">
-      <h3 class="section-title">自定义AI助手性格</h3>
-      <p class="section-desc">创建您自己的AI助手性格（需要高级会员）</p>
-      
-      <el-form label-position="top" :model="customPersonality" ref="formRef">
-        <el-form-item label="个性名称" prop="name">
-          <el-input v-model="customPersonality.name" placeholder="给您的AI助手起个名字" disabled />
-        </el-form-item>
-        <el-form-item label="个性描述" prop="description">
-          <el-input 
-            v-model="customPersonality.description" 
-            type="textarea" 
-            rows="3" 
-            placeholder="描述AI助手的性格特点"
-            disabled
-          />
-        </el-form-item>
-        <el-form-item label="交流风格" prop="style">
-          <el-select v-model="customPersonality.style" placeholder="选择交流风格" style="width: 100%" disabled>
-            <el-option label="正式" value="formal" />
-            <el-option label="友好" value="friendly" />
-            <el-option label="幽默" value="humorous" />
-            <el-option label="简洁" value="concise" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-tooltip content="需要高级会员才能创建自定义助手" placement="top">
-            <el-button type="primary" disabled>升级会员解锁</el-button>
-          </el-tooltip>
-        </el-form-item>
-      </el-form>
-    </div>
   </div>
 </template>
 
@@ -71,9 +43,9 @@ import { ref, reactive, onMounted } from 'vue';
 import { useUserStore } from '../../store/user';
 import { ElMessage } from 'element-plus';
 import axios from 'axios';
+import { Document, User, Avatar, ChatDotRound, StarFilled, Briefcase, Calendar } from '@element-plus/icons-vue';
 
 const userStore = useUserStore();
-const formRef = ref(null);
 
 // 创建axios实例用于API请求
 const axiosInstance = axios.create({
@@ -98,21 +70,64 @@ axiosInstance.interceptors.request.use(config => {
 // 助手数据
 const personalities = ref([]);
 const currentPersonality = ref(null);
-const customPersonality = reactive({
-  name: '',
-  description: '',
-  style: 'friendly'
-});
 
 // 根据助手信息获取图标
 const getPersonalityIcon = (personality) => {
-  switch(personality.personality_type) {
-    case '严谨高效型': return 'Document';
-    case '温柔体贴型': return 'Avatar';
-    case '俏皮幽默型': return 'ChatDotRound';
-    case '简洁利落型': return 'Briefcase';
-    case '鼓励打气型': return 'StarFilled';
-    default: return 'User';
+  if (!personality) return {
+    icon: 'User',
+    color: '#409EFF'
+  };
+  
+  // 根据助手名称和类型返回对应图标
+  switch(personality.name) {
+    case '睿记': return {
+      icon: 'Document',
+      color: '#2E5E4E' // 深绿色，专业感
+    };
+    case '小暖': return {
+      icon: 'ChatDotRound',
+      color: '#F08C7A' // 温暖的珊瑚色
+    };
+    case '乐豆': return {
+      icon: 'StarFilled',
+      color: '#F7C242' // 活泼的黄色
+    };
+    case '简': return {
+      icon: 'Briefcase',
+      color: '#687C97' // 简约的蓝灰色
+    };
+    case '启航': return {
+      icon: 'Calendar',
+      color: '#6A8D73' // 积极的绿色
+    };
+    default:
+      // 根据性格类型作为备选分类
+      switch(personality.personality_type) {
+        case '严谨高效型': return {
+          icon: 'Document',
+          color: '#2E5E4E'
+        };
+        case '温柔体贴型': return {
+          icon: 'Avatar',
+          color: '#F08C7A'
+        };
+        case '俏皮幽默型': return {
+          icon: 'ChatDotRound',
+          color: '#F7C242'
+        };
+        case '简洁利落型': return {
+          icon: 'Briefcase',
+          color: '#687C97'
+        };
+        case '鼓励打气型': return {
+          icon: 'StarFilled',
+          color: '#6A8D73'
+        };
+        default: return {
+          icon: 'User',
+          color: '#409EFF' // 默认蓝色
+        };
+      }
   }
 };
 
@@ -236,9 +251,5 @@ onMounted(() => {
   justify-content: center;
 }
 
-.settings-form {
-  margin-top: 30px;
-  max-width: 600px;
-  opacity: 0.8; /* 降低自定义表单的透明度，表示未启用 */
-}
+
 </style> 

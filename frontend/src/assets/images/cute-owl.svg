@@ -1,0 +1,49 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 身体背景 -->
+  <ellipse cx="100" cy="110" rx="70" ry="80" fill="#5DAF8E" />
+  
+  <!-- 腹部 -->
+  <ellipse cx="100" cy="120" rx="50" ry="60" fill="#A7E0C7" />
+  
+  <!-- 耳朵 -->
+  <path d="M 50 50 L 70 30 L 85 45 Z" fill="#3D6E59" />
+  <path d="M 150 50 L 130 30 L 115 45 Z" fill="#3D6E59" />
+  
+  <!-- 脸和头 -->
+  <circle cx="100" cy="80" r="50" fill="#5DAF8E" />
+  
+  <!-- 面部区域 -->
+  <ellipse cx="100" cy="90" rx="40" ry="35" fill="#F0F8F5" />
+  
+  <!-- 眼睛 -->
+  <g class="eyes">
+    <!-- 左眼 -->
+    <circle cx="80" cy="80" r="15" fill="white" />
+    <circle cx="80" cy="80" r="10" fill="#3D6E59" />
+    <circle cx="77" cy="77" r="4" fill="white" />
+    
+    <!-- 右眼 -->
+    <circle cx="120" cy="80" r="15" fill="white" />
+    <circle cx="120" cy="80" r="10" fill="#3D6E59" />
+    <circle cx="117" cy="77" r="4" fill="white" />
+  </g>
+  
+  <!-- 嘴巴 -->
+  <path d="M 90 100 L 100 110 L 110 100" fill="none" stroke="#3D6E59" stroke-width="3" stroke-linecap="round" />
+  
+  <!-- 喙 -->
+  <path d="M 95 95 Q 100 105, 105 95" fill="#FFA5D8" />
+  
+  <!-- 爱心 -->
+  <g transform="translate(85, 130) scale(0.2) rotate(10)">
+    <path d="M 0,30 A 30,30 0 0,1 60,30 A 30,30 0 0,1 120,30 Q 120,60 60,100 Q 0,60 0,30 Z" fill="#FFA5D8"/>
+  </g>
+  
+  <!-- 翅膀 -->
+  <path d="M 40 90 Q 20 120, 40 140" fill="none" stroke="#3D6E59" stroke-width="5" stroke-linecap="round" />
+  <path d="M 160 90 Q 180 120, 160 140" fill="none" stroke="#3D6E59" stroke-width="5" stroke-linecap="round" />
+  
+  <!-- 脚爪 -->
+  <path d="M 85 185 L 85 165" fill="none" stroke="#3D6E59" stroke-width="4" stroke-linecap="round" />
+  <path d="M 115 185 L 115 165" fill="none" stroke="#3D6E59" stroke-width="4" stroke-linecap="round" />
+</svg>

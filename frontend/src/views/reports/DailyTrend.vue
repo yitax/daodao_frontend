@@ -214,11 +214,22 @@ const renderChart = () => {
     // 如果图表已存在，先销毁
     if (chart) {
       chart.dispose();
+      chart = null;
     }
     
-    chart = echarts.init(chartDom);
+    console.log('[DailyTrend] renderChart - Chart container size:', 
+      chartDom.clientWidth, 'x', chartDom.clientHeight);
+    
+    // 强制设置容器大小，确保可见
+    if (chartDom.clientHeight < 200) {
+      chartDom.style.height = '400px';
+      console.log('[DailyTrend] renderChart - Forcing container height to 400px');
+    }
     
     try {
+      // 初始化图表，添加主题
+      chart = echarts.init(chartDom);
+      
       // 确保日期格式正确
       const dates = chartData.value.map(item => {
         if (typeof item.date === 'string') {
@@ -275,8 +286,9 @@ const renderChart = () => {
           {
             name: '收入',
             type: 'line',
-            stack: 'Total',
-            areaStyle: {},
+            areaStyle: {
+              opacity: 0.3
+            },
             emphasis: {
               focus: 'series'
             },
@@ -288,8 +300,9 @@ const renderChart = () => {
           {
             name: '支出',
             type: 'line',
-            stack: 'Total',
-            areaStyle: {},
+            areaStyle: {
+              opacity: 0.3
+            },
             emphasis: {
               focus: 'series'
             },
@@ -312,7 +325,14 @@ const renderChart = () => {
         ]
       };
       
+      // 设置图表选项
       chart.setOption(option);
+      
+      // 强制刷新确保渲染正确
+      setTimeout(() => {
+        chart && chart.resize();
+      }, 200);
+      
       console.log('[DailyTrend] renderChart - Chart rendered successfully');
     } catch (err) {
       console.error('[DailyTrend] renderChart - Error rendering chart:', err);
@@ -324,7 +344,7 @@ const renderChart = () => {
     window.addEventListener('resize', () => {
       chart && chart.resize();
     });
-  }, 0);
+  }, 100); // 增加延迟确保DOM加载完成
 };
 
 // 初始化认证和加载数据
@@ -414,30 +434,39 @@ onUnmounted(() => {
 <style scoped>
 .daily-trend {
   height: 100%;
-}
-
-.chart-container {
-  background-color: #fff;
-  border-radius: 4px;
-  padding: 15px;
-  height: 100%;
   display: flex;
   flex-direction: column;
 }
 
+.chart-container {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  min-height: 500px;
+}
+
 .chart-header {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
 
 .chart-header h3 {
   margin: 0;
   color: #303133;
   font-weight: 500;
+  font-size: 18px;
 }
 
 .chart-content {
   flex-grow: 1;
   position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
 }
 
 .chart-placeholder {
@@ -453,7 +482,8 @@ onUnmounted(() => {
 
 .chart {
   width: 100%;
-  height: 100%;
+  height: 400px; /* 增加图表高度，确保有足够空间 */
+  min-height: 300px; /* 设置最小高度 */
 }
 
 .loading-overlay, .error-message {
@@ -461,12 +491,14 @@ onUnmounted(() => {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 100%;
+  min-height: 400px;
   padding: 20px;
 }
 
 .error-message .el-alert {
   margin-bottom: 20px;
+  width: 100%;
+  max-width: 500px;
 }
 
 .mt-4 {

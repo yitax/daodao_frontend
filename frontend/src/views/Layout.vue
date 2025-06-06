@@ -1,7 +1,7 @@
 <template>
   <div class="app-layout">
     <el-container>
-      <el-aside width="200px">
+      <el-aside width="200px" class="fixed-aside">
         <div class="sidebar">
           <div class="logo">
             <h2>叨叨账本</h2>
@@ -107,7 +107,8 @@
 <script setup>
 import { useRouter } from 'vue-router';
 import { useUserStore } from '../store/user';
-import { ElMessageBox } from 'element-plus';
+import { ElMessageBox, ElMessage } from 'element-plus';
+import { onMounted } from 'vue';
 import {
   ChatDotRound,
   DataAnalysis,
@@ -126,6 +127,32 @@ import {
 
 const router = useRouter();
 const userStore = useUserStore();
+
+// 组件加载时检查用户登录状态
+onMounted(async () => {
+  console.log('[Layout] 组件加载，检查用户登录状态');
+  
+  // 检查用户是否已登录
+  if (!userStore.isLoggedIn) {
+    console.log('[Layout] 用户未登录，尝试恢复会话');
+    try {
+      await userStore.checkAuth();
+      
+      // 恢复会话后再次检查登录状态
+      if (!userStore.isLoggedIn) {
+        console.log('[Layout] 恢复会话失败，重定向到登录页面');
+        ElMessage.warning('请先登录');
+        router.replace('/login');
+      }
+    } catch (error) {
+      console.error('[Layout] 检查认证状态出错:', error);
+      ElMessage.error('会话已过期，请重新登录');
+      router.replace('/login');
+    }
+  } else {
+    console.log('[Layout] 用户已登录:', userStore.user?.username);
+  }
+});
 
 const handleCommand = (command) => {
   if (command === 'logout') {
@@ -146,6 +173,14 @@ const handleCommand = (command) => {
 <style scoped>
 .app-layout {
   height: 100vh;
+}
+
+.fixed-aside {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 1000;
 }
 
 .sidebar {
@@ -221,4 +256,16 @@ const handleCommand = (command) => {
 }
 
 .username {
-  font-si
+  font-size: 14px;
+  color: #3D6E59;
+}
+
+.el-main {
+  background-color: #E3F2ED;
+  padding: 20px;
+}
+
+:deep(.el-avatar) {
+  background-color: #2A4D3E;
+}
+</style> 

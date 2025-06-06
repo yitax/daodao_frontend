@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
@@ -6,6 +6,11 @@ from datetime import datetime, date
 import os
 import openai
 from dotenv import load_dotenv
+import base64
+import io
+import uuid
+import shutil
+from PIL import Image
 
 
 from ..models.database import get_db
@@ -122,9 +127,17 @@ def extract_financial_data(message_content: str):
         - 人情往来
         - 工资薪酬
         - 投资理财
+        - 奖金
+        - 退款
+        - 兼职收入
+        - 租金收入
+        - 礼金收入
+        - 中奖收入
+        - 意外所得
         - 其他收入
         - 其他支出
         - 未分类（仅当无法确定时使用）
+        必须是以上的选项，不能有其他选项
 
         ## 处理规则
         - 日期处理: 相对日期（如"昨天"、"上周五"）转换为绝对日期，今天是{current_date}
@@ -546,4 +559,157 @@ def confirm_transaction(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
+@router.post("/image-recognition", response_model=Dict[str, Any])
+async def recognize_image(
+    image: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    接收用户上传的交易凭证图片，进行OCR识别并提取交易信息
+    """
+    print("\n\n========= 接收到图片识别请求 =========")
+    print(f"用户: {current_user.username}")
+    print(f"文件名: {image.filename}")
+
+    try:
+        # 创建临时目录存储上传的图片
+        temp_dir = os.path.join("temp", "uploads")
+        os.makedirs(temp_dir, exist_ok=True)
+
+        # 生成唯一文件名
+        file_extension = os.path.splitext(image.filename)[1]
+        temp_file_name = f"{uuid.uuid4()}{file_extension}"
+        temp_file_path = os.path.join(temp_dir, temp_file_name)
+
+        # 保存上传的图片
+        print(f"保存图片到临时路径: {temp_file_path}")
+        with open(temp_file_path, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+
+        # 读取图片并转换为base64编码用于API调用
+        with open(temp_file_path, "rb") as image_file:
+            encoded_image = base64.b64encode(image_file.read()).decode("utf-8")
+
+        # 调用AI API提取图片中的交易信息
+        print("调用AI API识别图片中的交易信息...")
+
+        try:
+            # 构建提示词，要求AI提取图片中的交易信息
+            prompt = """
+            请分析这张交易凭证/收据图片，提取以下关键财务信息:
+            1. 交易类型: "income"(收入) 或 "expense"(支出)
+            2. 交易金额: 以数字形式表示
+            3. 交易日期和时间: 格式化为YYYY-MM-DD和HH:MM
+            4. 交易描述: 交易的目的、项目或购买的商品/服务
+            5. 交易分类: 例如"餐饮美食"、"交通出行"、"服饰美容"、"日用百货"等
+
+            请按以下JSON格式返回结果：
+            {
+              "type": "expense",
+              "amount": 123.45,
+              "date": "2023-05-20",
+              "time": "14:30",
+              "description": "在XX超市购买日用品",
+              "category": "日用百货"
+            }
+
+            如果无法识别某些字段，请提供你能提取的信息，缺失字段可设为null或合理默认值。
+            如果无法确定是收入还是支出，请根据图像中的上下文(如购物小票通常是支出)进行最佳猜测。
+            """
+
+            response = openai.ChatCompletion.create(
+                model="Qwen/Qwen2.5-72B-Instruct",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "你是一个专业的交易凭证识别助手，擅长从图片中提取财务信息。",
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{encoded_image}"
+                                },
+                            },
+                        ],
+                    },
+                ],
+                temperature=0.1,
+            )
+
+            print("API调用成功!")
+            result = response.choices[0].message.content
+            print(f"API原始返回: {result[:200]}...")
+
+            # 解析JSON响应
+            import json
+            import re
+
+            # 尝试从响应中提取JSON部分
+            json_match = re.search(r"({[\s\S]*})", result)
+            if json_match:
+                json_str = json_match.group(1)
+                print(f"提取的JSON字符串: {json_str[:100]}...")
+
+                extracted_data = json.loads(json_str)
+                print(f"解析后的数据: {extracted_data}")
+
+                # 生成AI响应消息
+                ai_message = (
+                    f"我已从图片中识别出以下交易信息：\n"
+                    f"类型：{'收入' if extracted_data.get('type') == 'income' else '支出'}\n"
+                    f"金额：¥{extracted_data.get('amount')}\n"
+                    f"日期：{extracted_data.get('date')}\n"
+                    f"描述：{extracted_data.get('description')}\n"
+                    f"分类：{extracted_data.get('category')}\n\n"
+                    f"请核对以上信息，确认无误后可点击确认按钮进行记账。"
+                )
+
+                # 保存AI消息到数据库
+                db_ai_message = ChatMessage(
+                    user_id=current_user.id,
+                    content=ai_message,
+                    is_user=False,
+                )
+                db.add(db_ai_message)
+                db.commit()
+                db.refresh(db_ai_message)
+
+                # 删除临时文件
+                os.remove(temp_file_path)
+
+                print("图片识别完成，返回提取的交易信息")
+                return {
+                    "message": ai_message,
+                    "extracted_info": extracted_data,
+                    "needs_confirmation": True,
+                }
+            else:
+                error_msg = "无法从API响应中提取JSON数据"
+                print(error_msg)
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg
+                )
+
+        except Exception as e:
+            print(f"图片识别过程中出错: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"图片识别失败: {str(e)}",
+            )
+    except Exception as e:
+        print(f"处理图片上传请求时出错: {str(e)}")
+        import traceback
+
+        print(f"错误堆栈:\n{traceback.format_exc()}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"处理图片失败: {str(e)}",
         )
