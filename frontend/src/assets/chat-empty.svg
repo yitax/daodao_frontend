@@ -1,0 +1,22 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Soft background circle -->
+  <circle cx="60" cy="60" r="60" fill="#E3F2ED"/>
+  
+  <!-- Main chat bubble -->
+  <path d="M40 37H80C86.6 37 92 42.4 92 49V71C92 77.6 86.6 83 80 83H65L50 95V83H40C33.4 83 28 77.6 28 71V49C28 42.4 33.4 37 40 37Z" fill="#5DAF8E"/>
+  
+  <!-- Smaller accent bubble -->
+  <path d="M75 42C79.9 42 84 46.1 84 51V57C84 61.9 79.9 66 75 66H68L62 72V66H60C55.1 66 51 61.9 51 57V51C51 46.1 55.1 42 60 42H75Z" fill="#A7E0C7"/>
+  
+  <!-- Cute eyes (dots) -->
+  <circle cx="45" cy="60" r="4" fill="#FFFFFF"/>
+  <circle cx="60" cy="60" r="4" fill="#FFFFFF"/>
+  <circle cx="75" cy="60" r="4" fill="#FFFFFF"/>
+  
+  <!-- Cute cheeks -->
+  <circle cx="45" cy="70" r="3" fill="#FF9E9E" opacity="0.6"/>
+  <circle cx="75" cy="70" r="3" fill="#FF9E9E" opacity="0.6"/>
+  
+  <!-- Smile curve -->
+  <path d="M52 68C56 72 64 72 68 68" stroke="white" stroke-width="2" stroke-linecap="round"/>
+</svg> 
