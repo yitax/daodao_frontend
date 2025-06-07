@@ -17,7 +17,7 @@ load_dotenv()
 # 初始化OpenAI API
 openai.api_key = os.getenv("API_KEY")
 openai.api_base = os.getenv("API_URL")
-
+use_model="gemini-2.5-flash-preview-05-20-thinking"
 # 设置默认请求配置，关闭超时
 openai.api_requestor.TIMEOUT_SECS = None
 
@@ -374,10 +374,19 @@ def generate_ai_analysis(spending_data: Dict[str, Any]) -> Dict[str, Any]:
         4. 节约潜力指出：哪些类别可以减少开支
         5. 具体的改善建议：实用且易于执行的建议
 
-        将你的回答分为两部分，大标题必须严格是这两个，不要有其他名字标题：
+        将你的回答分为两部分，大标题必须严格是这两个，不要有其他名字标题,严格分点回答，要换行：
         1. 消费习惯分析：详细分析用户当前的消费模式和特点（4-6条小标题）
         2. 财务改善建议：4-6条具体的改善建议
-
+        
+        示例格式：
+        (前面和结尾不要有任何输出）
+        一、消费习惯分析
+            1. ***
+            2. ***
+        二、财务改善建议
+            1. ***
+            2. ***
+        严格按照此格式，在此之外不要有其他任何输出。
         请使用友好、专业的语气，避免过于生硬或说教的口吻。回答必须是中文。
         """
 
@@ -385,10 +394,10 @@ def generate_ai_analysis(spending_data: Dict[str, Any]) -> Dict[str, Any]:
 
         # 调用API (不设置超时)
         response = openai.ChatCompletion.create(
-            model="Qwen/Qwen2.5-72B-Instruct",
+            model=use_model,
             messages=[
                 {
-                    "role": "consultant",
+                    "role": "assistant",
                     "content": "你是一位专业的财务顾问和消费行为分析师，擅长分析消费数据，识别消费模式，并提供实用的财务建议。",
                 },
                 {"role": "user", "content": prompt},
