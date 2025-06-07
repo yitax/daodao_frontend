@@ -38,7 +38,12 @@
       </div>
     </div>
 
-    <div class="chat-messages" ref="messagesContainer">
+    <div class="chat-messages" ref="messagesContainer" @scroll="handleScroll">
+      <div v-if="isLoadingMore" class="loading-more-indicator">
+        <div class="loading-spinner-small"></div>
+        <span>加载更多消息...</span>
+      </div>
+
       <div v-if="messages.length === 0" class="empty-chat">
         <el-empty description="来和叨叨聊天吧！">
           <template #image>
@@ -348,6 +353,12 @@ const extractedInfo = reactive({
   category: "未分类",
 });
 
+// Add new variables for pagination
+const currentPage = ref(0); // Track current page of messages
+const pageSize = ref(10); // Number of messages per page
+const hasMoreMessages = ref(true); // Flag to track if more messages exist
+const isLoadingMore = ref(false); // Flag to show loading state when fetching more messages
+
 // AI助手数据
 const personalities = ref([]);
 const currentPersonalityId = ref(1);
@@ -463,6 +474,10 @@ const sendMessage = async () => {
   const userInput = inputMessage.value; // Store before clearing
   inputMessage.value = "";
   scrollToBottom();
+
+  // 重置分页状态，因为新消息会添加到顶部
+  currentPage.value = 0;
+  hasMoreMessages.value = true;
 
   loading.value = true;
   isTyping.value = true;
@@ -749,9 +764,9 @@ const scrollToBottom = () => {
 };
 
 // 获取聊天历史
-const fetchChatHistory = async () => {
+const fetchChatHistory = async (loadMore = false) => {
   try {
-    console.log("获取聊天历史...");
+    console.log(`${loadMore ? "加载更多" : "获取聊天历史"}...`);
     // 尝试从sessionStorage获取token，确保已经登录
     const sessionToken = sessionStorage.getItem('token');
     const localToken = localStorage.getItem('token');
@@ -760,17 +775,51 @@ const fetchChatHistory = async () => {
       return;
     }
     
-    // 获取最新的10条消息
-    const response = await axiosInstance.get("/chat/history?limit=10");
-    console.log("获取到聊天历史:", response.data.length, "条消息");
+    const page = loadMore ? currentPage.value + 1 : 0;
+    const skip = page * pageSize.value;
+    const limit = pageSize.value;
+    
+    isLoadingMore.value = loadMore;
+    
+    // 保存当前滚动位置，用于加载更多后恢复
+    const scrollPosition = loadMore ? messagesContainer.value?.scrollHeight || 0 : 0;
+    
+    // 获取消息，带分页参数
+    const response = await axiosInstance.get(`/chat/history?limit=${limit}&skip=${skip}`);
+    console.log(`获取到${loadMore ? "更多" : ""}聊天历史:`, response.data.length, "条消息");
+    
+    // 如果没有返回消息或返回的消息数量小于页面大小，说明没有更多消息了
+    if (response.data.length === 0 || response.data.length < pageSize.value) {
+      hasMoreMessages.value = false;
+      console.log("已加载全部消息");
+    }
     
     // 为每个消息添加confirmedTransaction字段，确保兼容新结构
-    // 后端现在按创建时间降序排序，返回的已经是最新消息在前
-    messages.value = response.data.map((msg) => ({
+    const newMessages = response.data.map((msg) => ({
       ...msg,
       confirmedTransaction: null,
     }));
-    scrollToBottom();
+    
+    if (loadMore) {
+      // 追加新消息到现有消息列表的末尾（由于是倒序，所以旧消息在末尾）
+      messages.value = [...messages.value, ...newMessages];
+      // 更新页码
+      currentPage.value = page;
+    } else {
+      // 初始加载，直接替换整个消息列表
+      messages.value = newMessages;
+      currentPage.value = 0;
+      scrollToBottom();
+    }
+    
+    // 如果是加载更多，保持滚动位置不变
+    if (loadMore && messagesContainer.value) {
+      nextTick(() => {
+        const newScrollHeight = messagesContainer.value.scrollHeight;
+        const scrollOffset = newScrollHeight - scrollPosition;
+        messagesContainer.value.scrollTop = scrollOffset;
+      });
+    }
   } catch (error) {
     console.error("获取聊天历史失败:", error);
     if (error.response) {
@@ -785,6 +834,19 @@ const fetchChatHistory = async () => {
         ElMessage.error("登录已失效，请重新登录");
       }
     }
+  } finally {
+    isLoadingMore.value = false;
+  }
+};
+
+// 检测滚动到顶部，加载更多消息
+const handleScroll = () => {
+  if (!messagesContainer.value) return;
+  
+  // 如果滚动位置接近顶部且还有更多消息可加载且当前没有加载进行中
+  if (messagesContainer.value.scrollTop <= 50 && hasMoreMessages.value && !isLoadingMore.value) {
+    console.log("滚动到顶部，加载更多消息");
+    fetchChatHistory(true);
   }
 };
 
@@ -845,6 +907,10 @@ watch(messages, scrollToBottom, { deep: true });
 onMounted(async () => {
   console.log("Chat.vue onMounted: 组件已挂载");
   scrollToBottom();
+  
+  // 重置分页状态
+  currentPage.value = 0;
+  hasMoreMessages.value = true;
   
   try {
     // 确保用户已登录
@@ -1523,6 +1589,35 @@ const triggerFileInput = () => {
 }
 
 @keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Add loading indicator inside the .chat-messages div */
+.loading-more-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  color: #3D6E59;
+  font-size: 0.9em;
+  gap: 10px;
+}
+
+.loading-spinner-small {
+  border: 2px solid rgba(61, 110, 89, 0.3);
+  border-top: 2px solid #3D6E59;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  animation: spin-small 1s linear infinite;
+}
+
+@keyframes spin-small {
   0% {
     transform: rotate(0deg);
   }

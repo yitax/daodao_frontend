@@ -42,4 +42,4 @@ app.include_router(reports.router, prefix="/reports", tags=["Reports"])
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to 叨叨账本 API", "status": "running"}
+    return {"message": "Welcome to 叨叨记账 API", "status": "running"}

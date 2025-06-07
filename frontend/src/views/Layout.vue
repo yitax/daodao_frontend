@@ -4,7 +4,7 @@
       <el-aside width="200px" class="fixed-aside">
         <div class="sidebar">
           <div class="logo">
-            <h2>叨叨账本</h2>
+            <h2>叨叨记账</h2>
           </div>
           <el-menu
             router

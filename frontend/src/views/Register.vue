@@ -3,7 +3,7 @@
     <div class="auth-box">
       <div class="auth-header">
         <h1 class="auth-title">注册账号</h1>
-        <p class="auth-subtitle">加入叨叨账本，让理财更轻松</p>
+        <p class="auth-subtitle">加入叨叨记账，让理财更轻松</p>
       </div>
 
       <el-form
@@ -69,7 +69,7 @@
       </el-form>
 
       <div class="auth-footer">
-        <p>© {{ new Date().getFullYear() }} 叨叨账本 - 更轻松的记账方式</p>
+        <p>© {{ new Date().getFullYear() }} 叨叨记账 - 更轻松的记账方式</p>
       </div>
     </div>
   </div>

@@ -132,7 +132,7 @@ const router = createRouter({
 // 全局前置守卫
 router.beforeEach(async (to, from, next) => {
     // 设置页面标题
-    document.title = to.meta.title ? `${to.meta.title} - 叨叨账本` : '叨叨账本'
+    document.title = to.meta.title ? `${to.meta.title} - 叨叨记账` : '叨叨记账'
 
     const userStore = useUserStore()
     console.log(`[Router] 路由跳转: ${from.path} -> ${to.path}, 认证状态: ${userStore.isLoggedIn ? '已登录' : '未登录'}`)
