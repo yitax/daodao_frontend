@@ -102,7 +102,7 @@ const getPersonalityIcon = (personality) => {
     };
     default:
       // 根据性格类型作为备选分类
-      switch(personality.personality_type) {
+  switch(personality.personality_type) {
         case '严谨高效型': return {
           icon: 'Document',
           color: '#2E5E4E'

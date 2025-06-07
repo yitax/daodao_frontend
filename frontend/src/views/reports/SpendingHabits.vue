@@ -319,22 +319,22 @@ const formatText = (text) => {
   
   // 处理带有数字和点的项目（如"1. 调整娱乐和餐饮支出"）
   // 先处理特殊情况：财务改善建议1. xxx的格式
-  text = text.replace(/财务(改善)?建议(\d+)\.\s*(.*?)$/gm, '<div class="numbered-heading"><span class="number-badge">$2</span><span class="heading-content">$3</span></div>');
+  // text = text.replace(/财务(改善)?建议(\d+)\.\s*(.*?)$/gm, '<div class="numbered-heading"><span class="number-badge">$2</span><span class="heading-content">$3</span></div>');
   
-  // 处理带有####标记的数字编号（如"#### 1. 内容"）
-  text = text.replace(/#{3,}\s*(\d+)\.\s+(.*?)$/gm, '<div class="numbered-heading"><span class="number-badge">$1</span><span class="heading-content">$2</span></div>');
+  // // 处理带有####标记的数字编号（如"#### 1. 内容"）
+  // text = text.replace(/#{3,}\s*(\d+)\.\s+(.*?)$/gm, '<div class="numbered-heading"><span class="number-badge">$1</span><span class="heading-content">$2</span></div>');
   
-  // 处理普通的数字编号（如"1. 内容"）不带####
-  text = text.replace(/^(\d+)\.\s+(.*?)$/gm, '<div class="numbered-heading"><span class="number-badge">$1</span><span class="heading-content">$2</span></div>');
+  // // 处理普通的数字编号（如"1. 内容"）不带####
+  // text = text.replace(/^(\d+)\.\s+(.*?)$/gm, '<div class="numbered-heading"><span class="number-badge">$1</span><span class="heading-content">$2</span></div>');
   
-  // 处理"# 数字. 内容"格式的标题
-  text = text.replace(/^#\s*(\d+)\.\s+(.*?)$/gm, '<div class="numbered-heading"><span class="number-badge">$1</span><span class="heading-content">$2</span></div>');
+  // // 处理"# 数字. 内容"格式的标题
+  // text = text.replace(/^#\s*(\d+)\.\s+(.*?)$/gm, '<div class="numbered-heading"><span class="number-badge">$1</span><span class="heading-content">$2</span></div>');
   
-  // 处理"# 章节名称"格式的标题
-  text = text.replace(/^#\s+(?!\d+\.)(.*?)$/gm, '<h3 class="analysis-title">$1</h3>');
+  // // 处理"# 章节名称"格式的标题
+  // text = text.replace(/^#\s+(?!\d+\.)(.*?)$/gm, '<h3 class="analysis-title">$1</h3>');
   
-  // 处理所有可能的剩余Markdown标题
-  text = text.replace(/#{1,6}\s*(.*?)$/gm, '<h3 class="analysis-title">$1</h3>');
+  // // 处理所有可能的剩余Markdown标题
+  // text = text.replace(/#{1,6}\s*(.*?)$/gm, '<h3 class="analysis-title">$1</h3>');
   
   // 处理段落
   const paragraphs = text.split('\n');

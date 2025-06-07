@@ -29,26 +29,26 @@
       
       <!-- 密码修改表单，点击修改密码后显示 -->
       <div v-if="showPasswordForm" class="password-section">
-        <h3 class="section-title">修改密码</h3>
-        <p class="section-desc">更新您的账户密码</p>
-        
+      <h3 class="section-title">修改密码</h3>
+      <p class="section-desc">更新您的账户密码</p>
+      
         <el-form 
           :model="passwords" 
           ref="passwordFormRef" 
           :rules="passwordRules"
           label-position="top"
         >
-          <el-form-item label="当前密码" prop="currentPassword">
-            <el-input v-model="passwords.currentPassword" type="password" show-password />
-          </el-form-item>
-          
-          <el-form-item label="新密码" prop="newPassword">
-            <el-input v-model="passwords.newPassword" type="password" show-password />
-          </el-form-item>
-          
-          <el-form-item label="确认新密码" prop="confirmPassword">
-            <el-input v-model="passwords.confirmPassword" type="password" show-password />
-          </el-form-item>
+      <el-form-item label="当前密码" prop="currentPassword">
+        <el-input v-model="passwords.currentPassword" type="password" show-password />
+      </el-form-item>
+      
+      <el-form-item label="新密码" prop="newPassword">
+        <el-input v-model="passwords.newPassword" type="password" show-password />
+      </el-form-item>
+      
+      <el-form-item label="确认新密码" prop="confirmPassword">
+        <el-input v-model="passwords.confirmPassword" type="password" show-password />
+      </el-form-item>
           
           <el-form-item>
             <el-button type="primary" @click="updatePassword" :loading="savingPassword">保存新密码</el-button>

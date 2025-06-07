@@ -760,9 +760,12 @@ const fetchChatHistory = async () => {
       return;
     }
     
-    const response = await axiosInstance.get("/chat/history");
+    // 获取最新的10条消息
+    const response = await axiosInstance.get("/chat/history?limit=10");
     console.log("获取到聊天历史:", response.data.length, "条消息");
+    
     // 为每个消息添加confirmedTransaction字段，确保兼容新结构
+    // 后端现在按创建时间降序排序，返回的已经是最新消息在前
     messages.value = response.data.map((msg) => ({
       ...msg,
       confirmedTransaction: null,

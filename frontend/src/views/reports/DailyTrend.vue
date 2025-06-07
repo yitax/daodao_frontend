@@ -228,8 +228,8 @@ const renderChart = () => {
     
     try {
       // 初始化图表，添加主题
-      chart = echarts.init(chartDom);
-      
+    chart = echarts.init(chartDom);
+    
       // 确保日期格式正确
       const dates = chartData.value.map(item => {
         if (typeof item.date === 'string') {
