@@ -85,9 +85,9 @@
               <el-avatar
                 v-else
                 :size="40"
-                :style="{ backgroundColor: getPersonalityIcon(currentPersonality).color }"
+                :style="{ backgroundColor: getPersonalityIcon(msg.personality_id ? getPersonalityById(msg.personality_id) : currentPersonality).color }"
               >
-                <el-icon><component :is="getPersonalityIcon(currentPersonality).icon" /></el-icon>
+                <el-icon><component :is="getPersonalityIcon(msg.personality_id ? getPersonalityById(msg.personality_id) : currentPersonality).icon" /></el-icon>
               </el-avatar>
             </div>
             <div class="message-content">
@@ -301,7 +301,7 @@ const router = useRouter();
 // Use the API instance from userStore
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
-  timeout: 30000,
+  // 移除timeout设置，允许请求不限时长
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
@@ -378,6 +378,11 @@ const currentPersonality = computed(() => {
     { id: 1, name: '默认助手', personality_type: '默认类型' }
   );
 });
+
+// 根据ID查找助手信息
+const getPersonalityById = (id) => {
+  return personalities.value.find(p => p.id === id) || currentPersonality.value;
+};
 
 // 根据助手信息获取图标
 const getPersonalityIcon = (personality) => {
@@ -537,11 +542,12 @@ const sendMessage = async () => {
     const aiMessage = {
         id: aiMsgId,
         content: aiMessageContent,
-      is_user: false,
+        is_user: false,
         created_at: aiReplyFullMessage.created_at || new Date().toISOString(),
         transaction_details: extractedTransactionInfo || null, 
         confirmedTransaction: null, 
         related_user_message_id: userMessageId, // 存储关联的用户消息ID
+        personality_id: currentPersonalityId.value // 保存当前使用的助手ID
     };
 
           messages.value.push(aiMessage);
@@ -577,12 +583,13 @@ const sendMessage = async () => {
       }
     } else {
       console.error("后端响应为空或无效", response);
-      messages.value.push({
-        id: Date.now() + 1,
-        content: "抱歉，AI服务暂时没有返回有效信息，请稍后再试。",
-        is_user: false,
-        created_at: new Date().toISOString(),
-      });
+          messages.value.push({
+      id: Date.now() + 1,
+      content: "抱歉，AI服务暂时没有返回有效信息，请稍后再试。",
+      is_user: false,
+      created_at: new Date().toISOString(),
+      personality_id: currentPersonalityId.value
+    });
       scrollToBottom();
     }
   } catch (error) {
@@ -598,6 +605,7 @@ const sendMessage = async () => {
       content: "抱歉，与服务器通信或处理回复时发生错误。",
       is_user: false,
       created_at: new Date().toISOString(),
+      personality_id: currentPersonalityId.value
     });
     scrollToBottom();
   } finally {
@@ -743,12 +751,13 @@ const cancelTransaction = () => {
   ElMessage.info("交易已取消。");
   console.log("交易已取消");
   
-  messages.value.push({
-    id: Date.now(),
-    content: "好的，已取消当前交易记录操作。",
-    is_user: false,
-    created_at: new Date().toISOString(),
-  });
+      messages.value.push({
+      id: Date.now(),
+      content: "好的，已取消当前交易记录操作。",
+      is_user: false,
+      created_at: new Date().toISOString(),
+      personality_id: currentPersonalityId.value
+    });
   scrollToBottom();
 };
 
@@ -762,6 +771,7 @@ const changePersonality = (id) => {
     content: `我已经切换为${selectedPersonality ? selectedPersonality.name : '默认助手'}，有什么可以帮您？`,
       is_user: false,
       created_at: new Date().toISOString(),
+      personality_id: currentPersonalityId.value  // 这里使用新选择的助手ID
     });
     scrollToBottom();
   console.log("助手已切换为:", currentPersonalityId.value);
@@ -1087,6 +1097,7 @@ const handleImageUpload = async (event) => {
         created_at: new Date().toISOString(),
         transaction_details: extractedData,
         confirmedTransaction: null,
+        personality_id: currentPersonalityId.value
       };
       
       // 添加消息到聊天记录
@@ -1128,6 +1139,7 @@ const handleImageUpload = async (event) => {
       content: "抱歉，图片识别失败，请确保图片清晰且包含交易信息，或尝试直接输入交易信息。",
       is_user: false,
       created_at: new Date().toISOString(),
+      personality_id: currentPersonalityId.value
     });
     scrollToBottom();
   } finally {

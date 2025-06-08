@@ -157,6 +157,7 @@
             value-format="yyyy-MM-dd"
             placeholder="选择日期"
             style="width: 100%"
+            :default-value="new Date()"
           ></el-date-picker>
         </el-form-item>
         <el-form-item label="时间">
@@ -166,6 +167,7 @@
             value-format="HH:mm"
             placeholder="选择时间"
             style="width: 100%"
+            :default-value="new Date()"
           ></el-time-picker>
         </el-form-item>
         <el-form-item label="描述">
@@ -269,13 +271,47 @@ const openDialog = (mode, transaction) => {
   } else {
     // 填充表单数据
     currentTransactionId.value = transaction.id
+    
+    // 处理日期和时间
+    let txDate = transaction.transaction_date
+    let txTime = null
+    
+    // 确保日期格式正确
+    if (txDate && typeof txDate === 'string') {
+      // 如果是ISO格式的日期时间，只获取日期部分
+      if (txDate.includes('T')) {
+        txDate = txDate.split('T')[0]
+      }
+    }
+    
+    // 处理时间
+    if (transaction.transaction_time) {
+      try {
+        // 尝试将ISO格式的日期时间转换为只有时间部分
+        const timeDate = new Date(transaction.transaction_time)
+        txTime = format(timeDate, 'HH:mm')
+      } catch (error) {
+        console.error('时间格式转换失败:', error)
+        txTime = format(new Date(), 'HH:mm')
+      }
+    } else {
+      txTime = format(new Date(), 'HH:mm')
+    }
+    
+    console.log('编辑交易:', {
+      原始日期: transaction.transaction_date,
+      处理后日期: txDate,
+      原始时间: transaction.transaction_time,
+      处理后时间: txTime
+    })
+    
     transactionForm.value = {
       type: transaction.type,
       amount: transaction.amount,
-      description: transaction.description,
-      category: transaction.category,
-      transaction_date: transaction.transaction_date,
-      transaction_time: transaction.transaction_time ? format(parseISO(transaction.transaction_time), 'HH:mm') : format(new Date(), 'HH:mm')
+      description: transaction.description || '',
+      category: transaction.category || '',
+      transaction_date: txDate,
+      transaction_time: txTime
     }
   }
   dialogVisible.value = true
@@ -433,20 +469,23 @@ const saveTransaction = async () => {
       description: transactionForm.value.description || '',
       category: transactionForm.value.category,
       transaction_date: transactionForm.value.transaction_date,
+      // 修复transaction_time格式问题，只发送ISO格式时间字符串
       transaction_time: transactionForm.value.transaction_time ? 
         `${transactionForm.value.transaction_date}T${transactionForm.value.transaction_time}:00` : null,
       currency: 'CNY'
     }
     
+    console.log('发送的交易数据:', data)
+    
     let response
     
     if (dialogMode.value === 'create') {
       // 创建新交易
-      response = await transactionService.createTransaction(data)
+      response = await axiosInstance.post('/transactions/', data)
       ElMessage.success('交易已成功添加')
     } else {
       // 更新现有交易
-      response = await transactionService.updateTransaction(currentTransactionId.value, data)
+      response = await axiosInstance.put(`/transactions/${currentTransactionId.value}/`, data)
       ElMessage.success('交易已成功更新')
     }
     
@@ -456,6 +495,8 @@ const saveTransaction = async () => {
   } catch (error) {
     console.error('保存交易失败:', error)
     if (error.response) {
+      console.error('响应状态:', error.response.status)
+      console.error('响应数据:', error.response.data)
       ElMessage.error(`保存失败: ${error.response?.data?.detail || JSON.stringify(error.response.data)}`)
     } else {
       ElMessage.error(`保存失败: ${error.message || '网络错误'}`)
