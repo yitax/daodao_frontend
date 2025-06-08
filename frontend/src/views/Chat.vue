@@ -71,6 +71,7 @@
           v-for="msg in messages"
           :key="msg.id"
           class="message-group"
+          :data-message-id="msg.id"
         >
           <div
             :class="['message', msg.is_user ? 'user-message' : 'ai-message']"
@@ -359,6 +360,15 @@ const pageSize = ref(10); // Number of messages per page
 const hasMoreMessages = ref(true); // Flag to track if more messages exist
 const isLoadingMore = ref(false); // Flag to show loading state when fetching more messages
 
+// 添加调试日志函数
+const debugLog = (message, data) => {
+  if (data) {
+    console.log(`[Chat Debug] ${message}`, data);
+  } else {
+    console.log(`[Chat Debug] ${message}`);
+  }
+};
+
 // AI助手数据
 const personalities = ref([]);
 const currentPersonalityId = ref(1);
@@ -473,7 +483,9 @@ const sendMessage = async () => {
   messages.value.push(userMessage);
   const userInput = inputMessage.value; // Store before clearing
   inputMessage.value = "";
+  // 确保发送消息后自动滚动到底部
   scrollToBottom();
+  debugLog("用户发送消息，自动滚动到底部");
 
   // 重置分页状态，因为新消息会添加到顶部
   currentPage.value = 0;
@@ -532,8 +544,9 @@ const sendMessage = async () => {
         related_user_message_id: userMessageId, // 存储关联的用户消息ID
     };
 
-    messages.value.push(aiMessage);
+          messages.value.push(aiMessage);
       scrollToBottom();
+      debugLog("收到AI回复，自动滚动到底部");
       console.log("[Chat] AI消息已推送到messages数组:", JSON.parse(JSON.stringify(aiMessage)));
 
       // 检查是否需要显示确认框
@@ -767,7 +780,7 @@ const scrollToBottom = () => {
 // 获取聊天历史
 const fetchChatHistory = async (loadMore = false) => {
   try {
-    console.log(`${loadMore ? "加载更多" : "获取聊天历史"}...`);
+    debugLog(`${loadMore ? "加载更多历史消息" : "获取初始聊天历史"}...`);
     // 尝试从sessionStorage获取token，确保已经登录
     const sessionToken = sessionStorage.getItem('token');
     const localToken = localStorage.getItem('token');
@@ -780,10 +793,35 @@ const fetchChatHistory = async (loadMore = false) => {
     const skip = page * pageSize.value;
     const limit = pageSize.value;
     
+    // 设置加载状态标记
     isLoadingMore.value = loadMore;
+    isLoadingHistory.value = loadMore; // 设置历史加载标记，防止watch触发滚动
     
-    // 保存当前滚动位置，用于加载更多后恢复
-    const scrollPosition = loadMore ? messagesContainer.value?.scrollHeight || 0 : 0;
+    // 记录当前第一条可见消息的ID和滚动位置，用于后续保持滚动位置
+    let firstVisibleMessageId = null;
+    let scrollHeight = 0;
+    let scrollTop = 0;
+    
+    if (loadMore && messagesContainer.value && messages.value.length > 0) {
+      // 获取当前可视区域内的第一条消息
+      const containerRect = messagesContainer.value.getBoundingClientRect();
+      const messageElements = messagesContainer.value.querySelectorAll('.message-group');
+      
+      for (const el of messageElements) {
+        const rect = el.getBoundingClientRect();
+        if (rect.bottom >= containerRect.top) {
+          // 找到第一个在可视区域内的消息
+          firstVisibleMessageId = el.getAttribute('data-message-id');
+          debugLog("记录当前可见的第一条消息ID: " + firstVisibleMessageId);
+          break;
+        }
+      }
+      
+      // 保存滚动容器的当前高度和滚动位置
+      scrollHeight = messagesContainer.value.scrollHeight;
+      scrollTop = messagesContainer.value.scrollTop;
+      debugLog(`记录滚动状态: 容器高度=${scrollHeight}, 滚动位置=${scrollTop}`);
+    }
     
     // 获取消息，带分页参数
     const response = await axiosInstance.get(`/chat/history?limit=${limit}&skip=${skip}`);
@@ -812,21 +850,23 @@ const fetchChatHistory = async (loadMore = false) => {
       messages.value = [...newMessages, ...messages.value];
       // 更新页码
       currentPage.value = page;
+      
+      // 使用nextTick确保DOM已更新
+      nextTick(() => {
+        if (messagesContainer.value) {
+          // 计算加载后应在的位置：新内容高度 = 当前容器高度 - 之前容器高度
+          const newContentHeight = messagesContainer.value.scrollHeight - scrollHeight;
+          // 设置新的滚动位置 = 新内容高度 (保持相对于之前看到的内容的位置)
+          messagesContainer.value.scrollTop = newContentHeight;
+          debugLog(`上拉加载更多后，保持相对位置: 新内容高度=${newContentHeight}px`);
+        }
+      });
     } else {
       // 初始加载，直接替换整个消息列表
       messages.value = newMessages;
       currentPage.value = 0;
       // 确保滚动到最新消息
       scrollToBottom();
-    }
-    
-    // 如果是加载更多，保持滚动位置不变
-    if (loadMore && messagesContainer.value) {
-      nextTick(() => {
-        const newScrollHeight = messagesContainer.value.scrollHeight;
-        const scrollOffset = newScrollHeight - scrollPosition;
-        messagesContainer.value.scrollTop = scrollOffset;
-      });
     }
   } catch (error) {
     console.error("获取聊天历史失败:", error);
@@ -843,19 +883,40 @@ const fetchChatHistory = async (loadMore = false) => {
       }
     }
   } finally {
+    // 重置所有加载状态标记
     isLoadingMore.value = false;
+    isLoadingHistory.value = false;
   }
 };
 
-// 检测滚动到顶部，加载更多消息
-const handleScroll = () => {
+// 定义防抖函数
+const debounce = (fn, delay) => {
+  let timer = null;
+  return function() {
+    if (timer) {
+      clearTimeout(timer);
+    }
+    timer = setTimeout(() => {
+      fn.apply(this, arguments);
+      timer = null;
+    }, delay);
+  };
+};
+
+// 使用防抖的滚动处理函数
+const handleScrollDebounced = debounce(() => {
   if (!messagesContainer.value) return;
   
   // 如果滚动位置接近顶部且还有更多消息可加载且当前没有加载进行中
   if (messagesContainer.value.scrollTop <= 50 && hasMoreMessages.value && !isLoadingMore.value) {
-    console.log("滚动到顶部，加载更多消息");
+    debugLog("滚动到顶部，加载更多消息");
     fetchChatHistory(true);
   }
+}, 200);
+
+// 检测滚动到顶部，加载更多消息
+const handleScroll = () => {
+  handleScrollDebounced();
 };
 
 // 获取AI性格列表
@@ -909,14 +970,32 @@ const fetchPersonalities = async () => {
   }
 };
 
-// 监听消息变化，自动滚动到底部
+// 新消息加载标记，用于避免watch触发不必要的滚动
+const isLoadingHistory = ref(false);
+
+// 监听消息变化，智能滚动控制
 watch(
   messages,
   (newMessages, oldMessages) => {
-    // 只有在添加新消息时才滚动到底部
-    if (!oldMessages || newMessages.length > oldMessages.length) {
-      console.log("检测到消息增加，自动滚动到底部");
-      scrollToBottom();
+    if (!oldMessages) return;
+    
+    // 消息数量增加了
+    if (newMessages.length > oldMessages.length) {
+      // 检查是否是用户/AI新消息（而不是历史记录）
+      // 用户或AI新消息总是在数组末尾添加，而历史消息在数组前面添加
+      
+      // 如果旧消息的最后一条和新消息的最后一条不同，说明是新消息
+      const isNewChatMessage = oldMessages.length > 0 && 
+                               newMessages.length > 0 && 
+                               oldMessages[oldMessages.length - 1].id !== newMessages[newMessages.length - 1].id;
+      
+      if (isNewChatMessage && !isLoadingHistory.value) {
+        debugLog("检测到新的用户/AI消息，自动滚动到底部");
+        scrollToBottom();
+      } else if (isLoadingHistory.value) {
+        debugLog("检测到正在加载历史消息，不执行自动滚动");
+        // 不做任何滚动操作，位置由fetchChatHistory负责维护
+      }
     }
   },
   { deep: true }
@@ -1141,6 +1220,31 @@ const triggerFileInput = () => {
   display: flex;
   flex-direction: column;
   gap: 15px; /* Spacing between message groups */
+}
+
+.loading-more-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  margin-bottom: 10px;
+  color: #3D6E59;
+  font-size: 0.9em;
+}
+
+.loading-spinner-small {
+  border: 2px solid rgba(61, 110, 89, 0.3);
+  border-top: 2px solid #3D6E59;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  animation: spin-small 1s linear infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin-small {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .empty-chat {
