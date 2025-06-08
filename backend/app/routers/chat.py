@@ -38,6 +38,7 @@ print("====== 环境变量检查 ======")
 print(f"API_KEY: {os.getenv('API_KEY')}")
 print(f"API_URL: {os.getenv('API_URL') or '未设置'}")
 print("=========================")
+use_model = "gemini-2.5-flash-preview-05-20-thinking"
 
 
 # Pydantic models
@@ -166,7 +167,7 @@ def extract_financial_data(message_content: str):
         print(f"API基础URL: {openai.api_base}")
 
         response = openai.ChatCompletion.create(
-            model="Qwen/Qwen2.5-72B-Instruct",
+            model=use_model,
             messages=[
                 {
                     "role": "system",
@@ -252,7 +253,7 @@ def get_ai_response(user_message: str, personality_id: Optional[int], db: Sessio
 
         # Call the API
         response = openai.ChatCompletion.create(
-            model="Qwen/Qwen2.5-72B-Instruct",
+            model=use_model,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message},
@@ -622,7 +623,7 @@ async def recognize_image(
             """
 
             response = openai.ChatCompletion.create(
-                model="Qwen/Qwen2.5-72B-Instruct",
+                model=use_model,
                 messages=[
                     {
                         "role": "system",

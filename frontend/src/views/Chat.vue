@@ -757,9 +757,10 @@ const changePersonality = (id) => {
 // 滚动到底部
 const scrollToBottom = () => {
   nextTick(() => {
-  if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
-  }
+    if (messagesContainer.value) {
+      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+      console.log("执行滚动到底部");
+    }
   });
 };
 
@@ -800,15 +801,22 @@ const fetchChatHistory = async (loadMore = false) => {
       confirmedTransaction: null,
     }));
     
+    // 对消息按时间正序排序，确保最新消息在最下方
+    newMessages.sort((a, b) => {
+      return new Date(a.created_at) - new Date(b.created_at);
+    });
+    console.log("消息已按时间正序排序");
+    
     if (loadMore) {
-      // 追加新消息到现有消息列表的末尾（由于是倒序，所以旧消息在末尾）
-      messages.value = [...messages.value, ...newMessages];
+      // 加载更多历史消息时，将新消息添加到现有消息的前面（因为这些是更早的消息）
+      messages.value = [...newMessages, ...messages.value];
       // 更新页码
       currentPage.value = page;
     } else {
       // 初始加载，直接替换整个消息列表
       messages.value = newMessages;
       currentPage.value = 0;
+      // 确保滚动到最新消息
       scrollToBottom();
     }
     
@@ -902,11 +910,20 @@ const fetchPersonalities = async () => {
 };
 
 // 监听消息变化，自动滚动到底部
-watch(messages, scrollToBottom, { deep: true });
+watch(
+  messages,
+  (newMessages, oldMessages) => {
+    // 只有在添加新消息时才滚动到底部
+    if (!oldMessages || newMessages.length > oldMessages.length) {
+      console.log("检测到消息增加，自动滚动到底部");
+      scrollToBottom();
+    }
+  },
+  { deep: true }
+);
 
 onMounted(async () => {
   console.log("Chat.vue onMounted: 组件已挂载");
-  scrollToBottom();
   
   // 重置分页状态
   currentPage.value = 0;
@@ -932,6 +949,12 @@ onMounted(async () => {
     await fetchPersonalities();
     // 获取聊天历史
     await fetchChatHistory();
+    
+    // 确保在获取聊天历史后才滚动到底部
+    nextTick(() => {
+      console.log("组件挂载完成，执行初始滚动到底部");
+      scrollToBottom();
+    });
     
   } catch (error) {
     console.error("[Chat] onMounted 初始化错误:", error);
