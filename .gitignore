@@ -1,0 +1,40 @@
+# 忽略所有环境配置文件
+.env
+*.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pylint.d
+.pytest_cache/
+.coverage
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# IDE & Editor
+.idea/
+.vscode/
+
+# 数据库文件
+*.sqlite3
+*.db
+daodao.db
+
+# 前端依赖
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 临时文件和日志
+temp/
+*.log
+.DS_Store 
