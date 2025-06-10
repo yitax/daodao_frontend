@@ -2,13 +2,11 @@ import os
 import openai
 import sys
 
-# 将API密钥和URL直接写在脚本中进行测试，稍后可以移动到环境变量中
-# 请在此处填入您的API密钥
+
 API_KEY = "sk-lismnbjyqkujzycyjwucvttjdxgatrhysmnrfvdmowchsbot"
 
 # 配置OpenAI客户端
 openai.api_key = API_KEY
-# 如果Deepseek API有特定的API基础URL，请在这里设置，否则请注释掉这行
 openai.api_base = "https://api.siliconflow.cn/v1"
 
 
@@ -20,10 +18,12 @@ def test_api():
         response = openai.ChatCompletion.create(
             model="Qwen/Qwen2.5-72B-Instruct",
             messages=[
-                {"role": "system",
-                    "content": "你是一个专业的财务信息提取助手，精通中文财务语言处理，擅长从自然语言中识别记账意图并提取关键财务实体。",},
+                {
+                    "role": "system",
+                    "content": "你是一个专业的财务信息提取助手，精通中文财务语言处理，擅长从自然语言中识别记账意图并提取关键财务实体。",
+                },
                 {"role": "user", "content": "你好，我今天买水花了6块钱"},
-            ]
+            ],
         )
 
         # 打印API响应

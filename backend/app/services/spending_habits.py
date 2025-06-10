@@ -17,7 +17,7 @@ load_dotenv()
 # 初始化OpenAI API
 openai.api_key = os.getenv("API_KEY")
 openai.api_base = os.getenv("API_URL")
-use_model="gemini-2.5-flash-preview-05-20-thinking"
+use_model="Qwen/QwQ-32B"
 # 设置默认请求配置，关闭超时
 openai.api_requestor.TIMEOUT_SECS = None
 
