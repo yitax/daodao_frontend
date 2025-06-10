@@ -2,7 +2,7 @@ version: '3'
 
 services:
   backend:
-    build: ./DaoDao
+    build: ./backend
     container_name: daodao-backend
     restart: always
     environment:
