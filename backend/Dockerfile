@@ -9,7 +9,8 @@ ENV PYTHONUNBUFFERED 1
 WORKDIR /app
 
 # 更新pip
-RUN pip install --upgrade pip
+# RUN pip install --upgrade pip
+RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade pip
 
 # 复制依赖文件
 COPY requirements.txt .
