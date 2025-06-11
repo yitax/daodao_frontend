@@ -3,11 +3,15 @@ FROM node:18-alpine as build-stage
 
 WORKDIR /app
 
+# 设置环境变量
+ENV VITE_API_BASE_URL=''
+
 COPY package*.json ./
 RUN npm ci
 
 COPY . .
 RUN chmod +x node_modules/.bin/vite
+# 确保使用正确的环境变量进行构建
 RUN npm run build
 
 # 生产阶段

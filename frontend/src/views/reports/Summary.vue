@@ -199,7 +199,7 @@ const router = useRouter();
 
 // 创建一个API实例，专用于报表请求
 const apiInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

@@ -300,7 +300,7 @@ const router = useRouter();
 
 // Use the API instance from userStore
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '',
   // 移除timeout设置，允许请求不限时长
   headers: {
     'Content-Type': 'application/json',

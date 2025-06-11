@@ -230,7 +230,7 @@ const saveSettings = async () => {
       await axios.put(apiURL, {
         email: userInfo.email
       }, {
-        baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+        baseURL: import.meta.env.VITE_API_BASE_URL || '',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`
@@ -274,7 +274,7 @@ const updatePassword = async () => {
       // 安全地获取baseURL
       let fullURL = apiURL;
       try {
-        const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+        const baseURL = import.meta.env.VITE_API_BASE_URL || '';
         fullURL = `${baseURL}${apiURL}`;
         console.log('完整API URL:', fullURL);
       } catch (err) {
@@ -286,7 +286,7 @@ const updatePassword = async () => {
         current_password: passwords.currentPassword,
         new_password: passwords.newPassword
       }, {
-        baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+        baseURL: import.meta.env.VITE_API_BASE_URL || '',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`
