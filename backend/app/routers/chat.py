@@ -32,7 +32,7 @@ router = APIRouter()
 openai.api_key = os.getenv("API_KEY")
 # 配置API基础URL(可选)
 openai.api_base = os.getenv("API_URL")
-use_model="Qwen/QwQ-32B"
+use_model = "gemini-2.5-flash-preview-05-20"
 # 打印环境变量以进行调试
 print("====== 环境变量检查 ======")
 print(f"API_KEY: {os.getenv('API_KEY')}")
@@ -166,7 +166,7 @@ def extract_financial_data(message_content: str):
         print(f"API基础URL: {openai.api_base}")
 
         response = openai.ChatCompletion.create(
-            model= use_model,
+            model=use_model,
             messages=[
                 {
                     "role": "system",
@@ -252,7 +252,7 @@ def get_ai_response(user_message: str, personality_id: Optional[int], db: Sessio
 
         # Call the API
         response = openai.ChatCompletion.create(
-            model= use_model,
+            model=use_model,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message},
@@ -622,7 +622,7 @@ async def recognize_image(
             """
 
             response = openai.ChatCompletion.create(
-                model= use_model,
+                model=use_model,
                 messages=[
                     {
                         "role": "system",
