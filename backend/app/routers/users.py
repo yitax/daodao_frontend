@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 import os
 
 from ..models.database import get_db
@@ -128,22 +130,56 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(token_s
     "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
 )
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
+    print(f"\n======== 处理用户注册请求 ========")
+    print(f"用户名: {user.username}")
+    print(f"邮箱: {user.email}")
+    print(f"密码长度: {len(user.password) if user.password else 0}")
+
+    # 检查用户名是否已存在
     db_user = db.query(User).filter(User.username == user.username).first()
     if db_user:
-        raise HTTPException(status_code=400, detail="Username already registered")
+        error_msg = f"用户名 '{user.username}' 已被注册"
+        print(f"错误: {error_msg}")
+        # 使用JSONResponse替代HTTPException，确保错误信息格式一致
+        return JSONResponse(
+            status_code=400, content=jsonable_encoder({"detail": error_msg})
+        )
 
+    # 检查邮箱是否已存在
     db_email = db.query(User).filter(User.email == user.email).first()
     if db_email:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        error_msg = f"邮箱 '{user.email}' 已被注册"
+        print(f"错误: {error_msg}")
+        return JSONResponse(
+            status_code=400, content=jsonable_encoder({"detail": error_msg})
+        )
 
-    hashed_password = get_password_hash(user.password)
-    new_user = User(
-        username=user.username, email=user.email, hashed_password=hashed_password
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
+    # 检查密码长度
+    if len(user.password) < 6:
+        error_msg = "密码长度不能少于6个字符"
+        print(f"错误: {error_msg}")
+        return JSONResponse(
+            status_code=400, content=jsonable_encoder({"detail": error_msg})
+        )
+
+    # 创建用户
+    try:
+        hashed_password = get_password_hash(user.password)
+        new_user = User(
+            username=user.username, email=user.email, hashed_password=hashed_password
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        print(f"注册成功: 用户ID {new_user.id}")
+        return new_user
+    except Exception as e:
+        db.rollback()
+        error_msg = f"注册失败: {str(e)}"
+        print(f"错误: {error_msg}")
+        return JSONResponse(
+            status_code=500, content=jsonable_encoder({"detail": error_msg})
+        )
 
 
 @router.post("/login", response_model=Token)
@@ -259,14 +295,9 @@ def delete_user_account(
             status_code=status.HTTP_400_BAD_REQUEST, detail="密码不正确"
         )
 
-    # 删除或禁用账户
-    # 在实际应用中，可能需要考虑软删除或处理关联数据
+    # 禁用账户
     current_user.is_active = False
     db.commit()
-
-    # 如果真的要物理删除账户：
-    # db.delete(current_user)
-    # db.commit()
 
     return {"message": "账户已删除"}
 
@@ -276,11 +307,6 @@ def get_user_settings(
     db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """获取用户设置，包括当前选择的AI助手等"""
-    # 在实际应用中，这些设置可能存储在专门的用户设置表中
-    # 在这里，我们假设personality_id存储在用户表的某个字段中
-    # 如果需要，可以创建专门的UserSettings表来存储这些信息
-
-    # 由于当前数据库中User表不存在personality_id字段，我们直接返回默认助手
     default_personality = (
         db.query(AIPersonality).filter(AIPersonality.is_default == True).first()
     )

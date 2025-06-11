@@ -4,7 +4,7 @@ import axios from 'axios'
 
 // 创建HTTP客户端
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+    baseURL: '',  // 修改为空字符串，使用相对路径直接访问
     timeout: 30000,
     headers: {
         'Content-Type': 'application/json',
@@ -14,7 +14,7 @@ const api = axios.create({
 
 // 添加拦截器以记录API请求
 api.interceptors.request.use(config => {
-    console.log(`发送请求: ${config.method.toUpperCase()} ${config.baseURL}${config.url}`)
+    console.log(`发送请求: ${config.method.toUpperCase()} ${config.url}`)
     return config
 })
 
@@ -127,19 +127,71 @@ export const useUserStore = defineStore('user', () => {
         loading.value = true
         error.value = null
         try {
+            console.log('准备注册用户:', { username, email, password: '***' });
+
+            // 打印完整请求信息
+            console.log('注册请求URL:', '/users/register');
+            console.log('注册请求数据:', JSON.stringify({
+                username,
+                email,
+                password
+            }));
+
             const response = await api.post('/users/register', {
                 username,
                 email,
                 password
-            })
-            await login(username, password, true)
-            return true
-        } catch (error) {
-            console.error('注册失败:', error)
-            error.value = error.response?.data?.detail || '注册失败，请稍后再试'
-            return false
+            });
+
+            console.log('注册成功，响应数据:', response.data);
+            await login(username, password, true);
+            return true;
+        } catch (err) {
+            console.error('---------- 注册失败 ----------');
+            console.error('错误对象:', err);
+
+            if (err.response) {
+                console.error('状态码:', err.response.status);
+                console.error('响应头:', err.response.headers);
+                console.error('响应数据:', err.response.data);
+                console.error('原始响应:', err.response);
+
+                // 尝试多种方式提取错误信息
+                let errorMessage = '';
+
+                if (typeof err.response.data === 'object') {
+                    console.log('数据类型: 对象');
+                    if (err.response.data.detail) {
+                        errorMessage = err.response.data.detail;
+                        console.log('从detail字段提取错误信息:', errorMessage);
+                    } else {
+                        console.log('对象中没有detail字段');
+                        errorMessage = JSON.stringify(err.response.data);
+                    }
+                } else if (typeof err.response.data === 'string') {
+                    console.log('数据类型: 字符串');
+                    errorMessage = err.response.data;
+                    console.log('使用整个字符串作为错误信息:', errorMessage);
+                } else {
+                    console.log('未知数据类型:', typeof err.response.data);
+                    errorMessage = `错误 (${err.response.status})`;
+                }
+
+                // 保存错误信息
+                error.value = errorMessage || '注册失败，请稍后再试';
+                console.log('最终错误信息:', error.value);
+            } else if (err.request) {
+                console.error('请求已发送但没有收到响应');
+                error.value = '服务器无响应，请检查网络连接';
+            } else {
+                console.error('请求配置错误:', err.message);
+                error.value = `请求错误: ${err.message}`;
+            }
+
+            console.error('---------- 错误处理结束 ----------');
+            return false;
         } finally {
-            loading.value = false
+            loading.value = false;
         }
     }
 

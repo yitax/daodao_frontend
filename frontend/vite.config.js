@@ -15,25 +15,21 @@ export default defineConfig({
         open: true,
         base: '/',
         proxy: {
-            '/api/reports': {
+            '/users': {
                 target: 'http://localhost:8000',
                 changeOrigin: true,
-                rewrite: (path) => path.replace(/^\/api/, '')
             },
-            '/api/users': {
+            '/transactions': {
                 target: 'http://localhost:8000',
                 changeOrigin: true,
-                rewrite: (path) => path.replace(/^\/api/, '')
             },
-            '/api/transactions': {
+            '/reports': {
                 target: 'http://localhost:8000',
                 changeOrigin: true,
-                rewrite: (path) => path.replace(/^\/api/, '')
             },
-            '/api/chat': {
+            '/chat': {
                 target: 'http://localhost:8000',
                 changeOrigin: true,
-                rewrite: (path) => path.replace(/^\/api/, '')
             }
         },
         historyApiFallback: true

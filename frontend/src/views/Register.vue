@@ -6,6 +6,16 @@
         <p class="auth-subtitle">加入叨叨记账，让理财更轻松</p>
       </div>
 
+      <!-- 添加错误提示区域 -->
+      <el-alert
+        v-if="registerError"
+        :title="registerError"
+        type="error"
+        :closable="true"
+        show-icon
+        class="register-error"
+      />
+
       <el-form
         ref="registerFormRef"
         :model="registerForm"
@@ -87,6 +97,7 @@ const router = useRouter();
 const userStore = useUserStore();
 const loading = ref(false);
 const registerFormRef = ref(null);
+const registerError = ref(''); // 添加错误信息状态
 
 const registerForm = reactive({
   username: "",
@@ -125,25 +136,87 @@ const registerRules = {
 
 const handleRegister = async () => {
   if (!registerFormRef.value) return;
+  
+  // 清除之前的错误信息
+  registerError.value = '';
 
   await registerFormRef.value.validate(async (valid) => {
     if (!valid) return;
 
     loading.value = true;
     try {
+      console.log('开始注册过程...');
       const success = await userStore.register(
         registerForm.username,
         registerForm.email,
         registerForm.password
       );
 
+      console.log('注册结果:', success ? '成功' : '失败');
+      console.log('userStore.error:', userStore.error);
+
       if (success) {
         ElMessage.success("注册成功，请登录");
         router.push("/login");
+      } else {
+        // 显示store中存储的错误信息
+        console.error('注册失败，userStore中的错误信息:', userStore.error);
+        
+        if (userStore.error) {
+          // 设置错误提示
+          registerError.value = userStore.error;
+          console.log('设置页面错误提示为:', registerError.value);
+          
+          // 使用弹窗显示错误
+          ElMessage({
+            message: userStore.error,
+            type: 'error',
+            duration: 5000,
+            showClose: true
+          });
+          
+          // 额外的弹窗作为备份
+          setTimeout(() => {
+            alert(`注册失败: ${userStore.error}`);
+          }, 100);
+        } else {
+          registerError.value = "注册失败，请稍后再试或换一个用户名";
+          console.log('设置默认错误提示');
+          
+          // 使用弹窗显示错误
+          ElMessage({
+            message: "注册失败，请稍后再试或换一个用户名",
+            type: 'error',
+            duration: 5000,
+            showClose: true
+          });
+          
+          // 额外的弹窗作为备份
+          setTimeout(() => {
+            alert("注册失败，请稍后再试或换一个用户名");
+          }, 100);
+        }
       }
     } catch (error) {
-      console.error("注册出错:", error);
-      ElMessage.error("注册失败，请稍后再试");
+      console.error("注册处理异常:", error);
+      
+      // 如果出现异常，也尝试显示store中的错误
+      const errorMsg = userStore.error || error.message || "注册失败，请稍后再试";
+      registerError.value = errorMsg;
+      console.log('异常处理中设置错误提示为:', errorMsg);
+      
+      // 同时通过消息提示显示错误
+      ElMessage({
+        message: errorMsg,
+        type: 'error',
+        duration: 5000,
+        showClose: true
+      });
+      
+      // 额外的弹窗作为备份
+      setTimeout(() => {
+        alert(`注册出错: ${errorMsg}`);
+      }, 100);
     } finally {
       loading.value = false;
     }
@@ -164,5 +237,17 @@ const handleRegister = async () => {
 
 :deep(.el-form-item__error) {
   color: #F56C6C;
+}
+
+/* 注册错误提示样式 */
+.register-error {
+  margin-bottom: 15px;
+  font-weight: 500;
+  font-size: 14px !important;
+}
+
+:deep(.el-alert__title) {
+  font-size: 14px !important;
+  line-height: 1.4;
 }
 </style> 
