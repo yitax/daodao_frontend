@@ -6,8 +6,6 @@ from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
 import os
 
 from ..models.database import get_db
@@ -140,27 +138,20 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     if db_user:
         error_msg = f"用户名 '{user.username}' 已被注册"
         print(f"错误: {error_msg}")
-        # 使用JSONResponse替代HTTPException，确保错误信息格式一致
-        return JSONResponse(
-            status_code=400, content=jsonable_encoder({"detail": error_msg})
-        )
+        raise HTTPException(status_code=400, detail=error_msg)
 
     # 检查邮箱是否已存在
     db_email = db.query(User).filter(User.email == user.email).first()
     if db_email:
         error_msg = f"邮箱 '{user.email}' 已被注册"
         print(f"错误: {error_msg}")
-        return JSONResponse(
-            status_code=400, content=jsonable_encoder({"detail": error_msg})
-        )
+        raise HTTPException(status_code=400, detail=error_msg)
 
     # 检查密码长度
     if len(user.password) < 6:
         error_msg = "密码长度不能少于6个字符"
         print(f"错误: {error_msg}")
-        return JSONResponse(
-            status_code=400, content=jsonable_encoder({"detail": error_msg})
-        )
+        raise HTTPException(status_code=400, detail=error_msg)
 
     # 创建用户
     try:
@@ -177,9 +168,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
         db.rollback()
         error_msg = f"注册失败: {str(e)}"
         print(f"错误: {error_msg}")
-        return JSONResponse(
-            status_code=500, content=jsonable_encoder({"detail": error_msg})
-        )
+        raise HTTPException(status_code=500, detail=error_msg)
 
 
 @router.post("/login", response_model=Token)
