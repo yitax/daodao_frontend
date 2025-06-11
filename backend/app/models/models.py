@@ -29,8 +29,8 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
-    # 暂时注释掉这个字段，因为数据库表中还没有这个列
-    # personality_id = Column(Integer, ForeignKey("ai_personalities.id"), nullable=True)
+    # 添加用户选择的AI助手ID
+    personality_id = Column(Integer, ForeignKey("ai_personalities.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(
         DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
@@ -39,8 +39,8 @@ class User(Base):
     # Relationships
     transactions = relationship("Transaction", back_populates="user")
     chat_messages = relationship("ChatMessage", back_populates="user")
-    # 暂时注释掉这个关系
-    # personality = relationship("AIPersonality")
+    # 关联到选择的AI助手
+    personality = relationship("AIPersonality")
 
 
 class Transaction(Base):

@@ -65,8 +65,17 @@ export const useUserStore = defineStore('user', () => {
     const loading = ref(false)
     const error = ref(null)
 
+    // 新增：AI助手相关状态
+    const personalities = ref([])
+    const currentPersonalityId = ref(null)
+
     const isLoggedIn = computed(() => !!token.value)
     const username = computed(() => user.value?.username || '未登录')
+
+    // 新增：根据ID查找助手信息
+    const currentPersonality = computed(() => {
+        return personalities.value.find(p => p.id === currentPersonalityId.value) || personalities.value[0] || null
+    })
 
     async function login(username, password, rememberMe = false) {
         loading.value = true
@@ -98,6 +107,7 @@ export const useUserStore = defineStore('user', () => {
             }
 
             await fetchUserInfo()
+            await fetchPersonalities()
             return true
         } catch (error) {
             console.error('登录失败:', error)
@@ -140,6 +150,7 @@ export const useUserStore = defineStore('user', () => {
         try {
             const response = await api.get('/users/me')
             user.value = response.data
+            await fetchUserSettings()
             return user.value
         } catch (error) {
             console.error('获取用户信息失败:', error)
@@ -147,6 +158,69 @@ export const useUserStore = defineStore('user', () => {
             throw error
         } finally {
             loading.value = false
+        }
+    }
+
+    // 新增：获取用户设置（包括助手ID，优先从localStorage读取）
+    async function fetchUserSettings() {
+        try {
+            // 优先从localStorage读取
+            const localPersonalityId = localStorage.getItem('personality_id')
+
+            if (localPersonalityId) {
+                console.log(`[UserStore] 从本地存储读取personality_id: ${localPersonalityId}`)
+                currentPersonalityId.value = parseInt(localPersonalityId, 10)
+                return
+            }
+
+            // 如果本地没有，尝试从服务器获取
+            try {
+                const response = await api.get('/users/settings')
+                currentPersonalityId.value = response.data.personality_id
+                // 保存到localStorage以备将来使用
+                localStorage.setItem('personality_id', response.data.personality_id)
+            } catch (serverError) {
+                console.error('从服务器获取用户设置失败:', serverError)
+                // 如果服务器获取也失败，设置默认值
+                currentPersonalityId.value = 1
+                localStorage.setItem('personality_id', '1')
+            }
+        } catch (error) {
+            console.error('获取用户设置失败:', error)
+            // 如果整个过程失败，设置默认值
+            currentPersonalityId.value = 1
+            localStorage.setItem('personality_id', '1')
+        }
+    }
+
+    // 新增：获取所有AI助手列表
+    async function fetchPersonalities() {
+        try {
+            const response = await api.get('/chat/personalities');
+            if (response.data && response.data.length > 0) {
+                personalities.value = response.data;
+            }
+        } catch (error) {
+            console.error('获取AI助手列表失败:', error);
+            personalities.value = []; // 出错时清空
+        }
+    }
+
+    // 新增：更新用户设置（使用localStorage存储）
+    async function updateUserSettings(settings) {
+        try {
+            // 保存到本地存储而不是发送到服务器
+            if (settings.personality_id) {
+                // 更新状态
+                currentPersonalityId.value = settings.personality_id
+                // 保存到localStorage
+                localStorage.setItem('personality_id', settings.personality_id)
+                console.log(`[UserStore] 保存personality_id到本地存储: ${settings.personality_id}`)
+            }
+            return { success: true }
+        } catch (error) {
+            console.error('更新用户设置失败:', error)
+            throw new Error('更新设置失败，请稍后再试')
         }
     }
 
@@ -175,7 +249,9 @@ export const useUserStore = defineStore('user', () => {
 
             try {
                 const userData = await fetchUserInfo()
-                console.log('[UserStore] 用户信息获取成功:', userData?.username)
+                // 成功获取用户信息后，也获取助手列表
+                await fetchPersonalities()
+                console.log('[UserStore] 用户信息和助手列表获取成功:', userData?.username)
                 return userData
             } catch (error) {
                 console.error('[UserStore] 获取用户信息失败，清除token:', error)
@@ -200,6 +276,12 @@ export const useUserStore = defineStore('user', () => {
         localStorage.removeItem('token')
         localStorage.removeItem('rememberMe')
         sessionStorage.removeItem('token')
+        // 登出时不清除personality_id，保留用户的偏好设置
+        // localStorage.removeItem('personality_id')
+
+        // 新增：登出时清空助手列表，但保留选择的ID
+        personalities.value = []
+        // 保留currentPersonalityId.value，不设为null
     }
 
     return {
@@ -209,11 +291,16 @@ export const useUserStore = defineStore('user', () => {
         error,
         isLoggedIn,
         username,
+        personalities,
+        currentPersonalityId,
+        currentPersonality,
         login,
         register,
         fetchUserInfo,
         checkAuth,
         logout,
-        api
+        api,
+        fetchPersonalities,
+        updateUserSettings
     }
 }) 

@@ -371,7 +371,9 @@ const debugLog = (message, data) => {
 
 // AI助手数据
 const personalities = ref([]);
-const currentPersonalityId = ref(1);
+// 使用userStore中的共享状态替代本地状态
+// const currentPersonalityId = ref(1);
+const currentPersonalityId = computed(() => userStore.currentPersonalityId);
 const currentPersonality = computed(() => {
   return (
     personalities.value.find((p) => p.id === currentPersonalityId.value) ||
@@ -762,19 +764,23 @@ const cancelTransaction = () => {
 };
 
 // 切换AI性格
-const changePersonality = (id) => {
-  currentPersonalityId.value = id;
+const changePersonality = async (id) => {
+  // 使用userStore更新助手设置
+  await userStore.updateUserSettings({ personality_id: id });
+  
   const selectedPersonality = personalities.value.find(p => p.id === id);
   ElMessage.success(`助手已切换为: ${selectedPersonality ? selectedPersonality.name : '默认助手'}`);
-    messages.value.push({
+  
+  messages.value.push({
     id: Date.now(),
     content: `我已经切换为${selectedPersonality ? selectedPersonality.name : '默认助手'}，有什么可以帮您？`,
-      is_user: false,
-      created_at: new Date().toISOString(),
-      personality_id: currentPersonalityId.value  // 这里使用新选择的助手ID
-    });
-    scrollToBottom();
-  console.log("助手已切换为:", currentPersonalityId.value);
+    is_user: false,
+    created_at: new Date().toISOString(),
+    personality_id: id  // 这里使用新选择的助手ID
+  });
+  
+  scrollToBottom();
+  console.log("助手已切换为:", id);
 };
 
 // 滚动到底部
@@ -946,29 +952,18 @@ const fetchPersonalities = async () => {
     if (response.data.length > 0) {
       personalities.value = response.data;
       
-      // 尝试获取用户当前选择的助手
-      try {
-        const userSettings = await axiosInstance.get('/users/settings');
-        if (userSettings.data && userSettings.data.personality_id) {
-          currentPersonalityId.value = userSettings.data.personality_id;
-        } else {
-          currentPersonalityId.value = 1; // 默认使用第一个助手
-        }
-      } catch (error) {
-        console.error('获取用户设置失败，使用默认助手:', error);
-        currentPersonalityId.value = 1;
-      }
+      // 不再在这里设置currentPersonalityId，而是依赖userStore中的值
+      console.log("成功加载助手列表，当前选择的助手ID:", userStore.currentPersonalityId);
       
       console.log("成功加载并设置助手列表:", JSON.parse(JSON.stringify(personalities.value)));
     } else {
       console.warn("从后端获取的助手列表为空或格式不正确，将使用默认助手列表。", response.data);
       personalities.value = [{ id: 1, name: '默认助手', personality_type: '默认类型' }];
-      currentPersonalityId.value = 1;
+      // 不再直接修改currentPersonalityId
     }
   } catch (error) {
     console.error('获取助手列表失败，将使用默认助手列表:', error);
     personalities.value = [{ id: 1, name: '默认助手', personality_type: '默认类型' }];
-    currentPersonalityId.value = 1;
     
     // 处理认证失败的情况
     if (error.response && error.response.status === 401) {

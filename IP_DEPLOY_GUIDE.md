@@ -110,12 +110,12 @@ sudo nano /etc/nginx/sites-available/daodao
 
 server {
     listen 80;
-    server_name your_server_ip; # 这里填写您的服务器公网IP
+    server_name 47.98.122.118; # 这里填写您的服务器公网IP
 
     location / {
         # 将请求代理到前端容器
-        # Docker Compose默认将前端容器暴露在80端口
-        proxy_pass http://localhost:80;
+        # Docker Compose默认将前端容器暴露在8080端口
+        proxy_pass http://localhost:8080;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

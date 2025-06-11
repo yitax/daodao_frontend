@@ -6,7 +6,7 @@
     <el-row :gutter="20" class="personality-list">
       <el-col :xs="24" :sm="12" :md="8" v-for="personality in personalities" :key="personality.id">
         <el-card 
-          :class="['personality-card', { active: personality.id === currentPersonality }]" 
+          :class="['personality-card', { active: personality.id === currentPersonalityId }]" 
           @click="selectPersonality(personality.id)"
         >
           <div class="personality-icon">
@@ -24,7 +24,7 @@
           </div>
           <div class="personality-select">
             <el-button 
-              v-if="personality.id !== currentPersonality" 
+              v-if="personality.id !== currentPersonalityId" 
               size="small"
               @click.stop="selectPersonality(personality.id)"
             >
@@ -39,37 +39,16 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useUserStore } from '../../store/user';
 import { ElMessage } from 'element-plus';
-import axios from 'axios';
 import { Document, User, Avatar, ChatDotRound, StarFilled, Briefcase, Calendar } from '@element-plus/icons-vue';
 
 const userStore = useUserStore();
 
-// 创建axios实例用于API请求
-const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
-  timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
-});
-
-// 添加请求拦截器用于Token管理
-axiosInstance.interceptors.request.use(config => {
-  // 从存储获取token
-  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-  if (token) {
-    config.headers['Authorization'] = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// 助手数据
-const personalities = ref([]);
-const currentPersonality = ref(null);
+// 从 store 获取数据
+const personalities = computed(() => userStore.personalities);
+const currentPersonalityId = computed(() => userStore.currentPersonalityId);
 
 // 根据助手信息获取图标
 const getPersonalityIcon = (personality) => {
@@ -133,46 +112,21 @@ const getPersonalityIcon = (personality) => {
 
 // 选择性格
 const selectPersonality = async (id) => {
+  if (id === currentPersonalityId.value) return;
   try {
-    // 调用API更新用户的助手选择
-    await axiosInstance.post('/users/settings/personality', { personality_id: id });
-    currentPersonality.value = id;
+    await userStore.updateUserSettings({ personality_id: id });
     ElMessage.success('AI助手已更新');
   } catch (error) {
     console.error('设置AI助手失败:', error);
-    ElMessage.error('设置失败，请稍后再试');
-  }
-};
-
-// 获取用户当前AI助手设置
-const fetchPersonalitySettings = async () => {
-  try {
-    console.log('获取AI助手列表...');
-    const response = await axiosInstance.get('/chat/personalities');
-    console.log('获取到AI助手列表:', response.data);
-    
-    if (response.data.length > 0) {
-      personalities.value = response.data;
-      
-      // 获取用户当前选择的助手
-      try {
-        const userSettings = await axiosInstance.get('/users/settings');
-        currentPersonality.value = userSettings.data.personality_id || 1;
-      } catch (error) {
-        console.error('获取用户设置失败，使用默认助手:', error);
-        currentPersonality.value = 1; // 默认使用第一个助手
-      }
-    } else {
-      ElMessage.warning('获取助手列表失败，请刷新页面重试');
-    }
-  } catch (error) {
-    console.error('获取AI助手列表失败:', error);
-    ElMessage.error('获取助手列表失败，请稍后再试');
+    ElMessage.error(error.message || '设置失败，请稍后再试');
   }
 };
 
 onMounted(() => {
-  fetchPersonalitySettings();
+  // 如果store中没有助手列表，则主动获取
+  if (personalities.value.length === 0) {
+    userStore.fetchPersonalities();
+  }
 });
 </script>
 
@@ -249,7 +203,7 @@ onMounted(() => {
   margin-top: 15px;
   display: flex;
   justify-content: center;
+  align-items: center;
+  min-height: 32px; /* 确保高度一致 */
 }
-
-
 </style> 
