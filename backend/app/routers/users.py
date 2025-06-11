@@ -19,10 +19,10 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # JWT Settings
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-for-development")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 修改为24小时
 
 # OAuth2 token scheme
-token_scheme = OAuth2PasswordBearer(tokenUrl="api/users/login")
+token_scheme = OAuth2PasswordBearer(tokenUrl="users/login")  # 修改tokenUrl路径
 
 
 # Pydantic models
@@ -104,22 +104,47 @@ def authenticate_user(db: Session, username: str, password: str):
 
 
 def get_current_user(db: Session = Depends(get_db), token: str = Depends(token_scheme)):
+    print(f"\n======== 验证用户令牌 ========")
+    print(f"Token长度: {len(token)}")
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
+        print(f"尝试解码Token...")
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
+        print(f"Token中的用户名: {username}")
+
         if username is None:
+            print(f"错误: Token中没有用户名")
             raise credentials_exception
+
         token_data = TokenData(username=username)
-    except JWTError:
+
+        # 检查令牌过期时间
+        if "exp" in payload:
+            expiration = datetime.fromtimestamp(payload["exp"])
+            print(f"Token过期时间: {expiration}")
+            now = datetime.utcnow()
+            print(f"当前时间: {now}")
+            if now > expiration:
+                print(f"错误: Token已过期")
+                raise credentials_exception
+    except JWTError as e:
+        print(f"错误: JWT解码失败 - {str(e)}")
         raise credentials_exception
+
+    print(f"查询用户: {username}")
     user = db.query(User).filter(User.username == token_data.username).first()
+
     if user is None:
+        print(f"错误: 数据库中未找到用户")
         raise credentials_exception
+
+    print(f"验证成功: 用户ID {user.id}")
     return user
 
 
@@ -175,17 +200,27 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
 def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
 ):
+    print(f"\n======== 处理用户登录请求 ========")
+    print(f"用户名: {form_data.username}")
+    print(f"密码长度: {len(form_data.password) if form_data.password else 0}")
+
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
+        print(f"错误: 用户名或密码不正确")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
+
+    print(f"登录成功: 用户ID {user.id}，生成token (长度: {len(access_token)})")
+    print(f"Token有效期: {ACCESS_TOKEN_EXPIRE_MINUTES}分钟")
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 
