@@ -447,8 +447,8 @@ const getPersonalityIcon = (personality) => {
 const quickHints = ref([
   "我今天午饭花了25元",
   "收到工资5000元",
-  "查询上周支出",
-  "帮我设置一个提醒，明天带文件",
+  "看电影花了50元",
+  "帮我记录一下今天买菜花了10元",
 ]);
 
 // 格式化时间

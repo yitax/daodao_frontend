@@ -10,8 +10,7 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN chmod +x node_modules/.bin/vite
-# 确保使用正确的环境变量进行构建
+RUN chmod +x node_modules/.bin/vite 
 RUN npm run build
 
 # 生产阶段

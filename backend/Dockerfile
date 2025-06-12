@@ -8,8 +8,7 @@ ENV PYTHONUNBUFFERED 1
 # 设置工作目录
 WORKDIR /app
 
-# 更新pip
-# RUN pip install --upgrade pip
+# 更新pip 
 RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade pip
 
 # 复制依赖文件
