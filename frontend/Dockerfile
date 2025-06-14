@@ -13,6 +13,9 @@ RUN npm install
 # 复制所有源代码
 COPY . .
 
+# 添加vite命令执行权限
+RUN chmod +x node_modules/.bin/vite
+
 # 构建应用
 RUN npm run build
 
