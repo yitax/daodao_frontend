@@ -6,15 +6,17 @@ WORKDIR /app
 # 设置环境变量
 ENV NODE_ENV=production
 
-# 先只复制package.json进行依赖安装
+# 先复制package.json和package-lock.json
 COPY package*.json ./
-RUN npm install
 
-# 复制所有源代码
+# 清理node_modules并全新安装依赖
+RUN rm -rf node_modules && npm cache clean --force && npm install
+
+# 复制源代码（不包括node_modules）
 COPY . .
 
-# 添加vite命令执行权限
-RUN chmod +x node_modules/.bin/vite
+# 确保node_modules不会被覆盖（如果有的话）
+RUN rm -rf node_modules && npm install
 
 # 构建应用
 RUN npm run build
