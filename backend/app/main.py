@@ -1,8 +1,9 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from .routers import users, chat, transactions, reports
-from .models.database import engine, Base
+from .models.database import engine, Base, get_db
 from .init_db import import_assistants
+from .models.models import AIPersonality
 import os
 from dotenv import load_dotenv
 
@@ -12,12 +13,17 @@ load_dotenv()
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
-# 初始化数据库和导入助手配置
-try:
-    import_assistants()
-    print("成功导入助手配置到数据库")
-except Exception as e:
-    print(f"导入助手配置失败: {e}")
+# 只有在助手表为空时才导入预设助手配置
+db = next(get_db())
+assistant_count = db.query(AIPersonality).count()
+if assistant_count == 0:
+    try:
+        import_assistants()
+        print("成功导入助手配置到数据库")
+    except Exception as e:
+        print(f"导入助手配置失败: {e}")
+else:
+    print(f"数据库中已存在 {assistant_count} 个助手配置，跳过导入")
 
 app = FastAPI(
     title="叨叨记账 API", description="智能AI记账助手后端API", version="0.1.0"

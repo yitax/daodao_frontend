@@ -154,8 +154,9 @@
           <el-date-picker
             v-model="transactionForm.transaction_date"
             type="date"
-            value-format="yyyy-MM-dd"
             placeholder="选择日期"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
             style="width: 100%"
             :default-value="new Date()"
           ></el-date-picker>
@@ -302,11 +303,15 @@ const openDialog = (mode, transaction) => {
       原始日期: transaction.transaction_date,
       处理后日期: txDate,
       原始时间: transaction.transaction_time,
-      处理后时间: txTime
+      处理后时间: txTime,
+      原始类型: transaction.type
     })
     
+    // 确保类型值正确映射
+    const mappedType = transaction.type === 'INCOME' || transaction.type === 'income' ? 'income' : 'expense'
+    
     transactionForm.value = {
-      type: transaction.type,
+      type: mappedType,
       amount: transaction.amount,
       description: transaction.description || '',
       category: transaction.category || '',
@@ -400,7 +405,7 @@ const loadTransactions = async (resetPage = true) => {
     // 添加类型筛选
     if (typeFilter.value) {
       params.transaction_type = typeFilter.value;
-      console.log('类型筛选:', typeFilter.value);
+      console.log('类型筛选:', params.transaction_type);
     }
     
     console.log('API查询参数:', params);
@@ -413,6 +418,7 @@ const loadTransactions = async (resetPage = true) => {
     // 处理响应数据
     if (Array.isArray(response.data)) {
       console.log(`获取到${response.data.length}条交易记录`);
+      // 后端已经使用小写的income/expense，不需要转换
       transactions.value = response.data;
     } else {
       console.warn('API返回的不是数组:', response.data);
@@ -464,29 +470,74 @@ const saveTransaction = async () => {
     
     // 构建提交数据
     const data = {
-      type: transactionForm.value.type,
+      type: transactionForm.value.type, // 直接使用前端的income/expense，不需要转换
       amount: Number(transactionForm.value.amount),
-      description: transactionForm.value.description || '',
+      description: transactionForm.value.description || '无',  // 确保描述不为空
       category: transactionForm.value.category,
       transaction_date: transactionForm.value.transaction_date,
-      // 修复transaction_time格式问题，只发送ISO格式时间字符串
+      // 修复transaction_time格式问题，确保年份是实际年份而不是yyyy占位符
       transaction_time: transactionForm.value.transaction_time ? 
         `${transactionForm.value.transaction_date}T${transactionForm.value.transaction_time}:00` : null,
       currency: 'CNY'
     }
     
-    console.log('发送的交易数据:', data)
+    // 调试日期和时间值
+    console.log('日期值:', transactionForm.value.transaction_date)
+    console.log('时间值:', transactionForm.value.transaction_time)
+    console.log('合并后的datetime:', data.transaction_time)
+    
+    // 确保日期格式正确
+    if (data.transaction_date && data.transaction_date.includes('yyyy')) {
+      // 如果日期中包含占位符，替换为实际年份
+      const currentYear = new Date().getFullYear()
+      data.transaction_date = data.transaction_date.replace('yyyy', currentYear)
+      console.log('修正后的日期:', data.transaction_date)
+    }
+    
+    // 确保时间格式正确
+    if (data.transaction_time && data.transaction_time.includes('yyyy')) {
+      // 如果时间中包含占位符，替换为实际年份
+      const currentYear = new Date().getFullYear()
+      data.transaction_time = data.transaction_time.replace('yyyy', currentYear)
+      console.log('修正后的时间:', data.transaction_time)
+    }
+    
+    console.log('发送的交易数据:', JSON.stringify(data, null, 2))
     
     let response
     
     if (dialogMode.value === 'create') {
       // 创建新交易
-      response = await axiosInstance.post('/transactions/', data)
-      ElMessage.success('交易已成功添加')
+      console.log('创建新交易...')
+      try {
+        response = await axiosInstance.post('/transactions/', data)
+        console.log('创建交易成功:', response.data)
+        ElMessage.success('交易已成功添加')
+      } catch (postError) {
+        console.error('创建交易错误详情:', postError)
+        if (postError.response) {
+          console.error('响应状态码:', postError.response.status)
+          console.error('响应头:', postError.response.headers)
+          console.error('响应数据:', JSON.stringify(postError.response.data, null, 2))
+        }
+        throw postError // 重新抛出以便被外层catch捕获
+      }
     } else {
       // 更新现有交易
-      response = await axiosInstance.put(`/transactions/${currentTransactionId.value}/`, data)
-      ElMessage.success('交易已成功更新')
+      console.log('更新交易...')
+      try {
+        response = await axiosInstance.put(`/transactions/${currentTransactionId.value}/`, data)
+        console.log('更新交易成功:', response.data)
+        ElMessage.success('交易已成功更新')
+      } catch (putError) {
+        console.error('更新交易错误详情:', putError)
+        if (putError.response) {
+          console.error('响应状态码:', putError.response.status)
+          console.error('响应头:', putError.response.headers)
+          console.error('响应数据:', JSON.stringify(putError.response.data, null, 2))
+        }
+        throw putError // 重新抛出以便被外层catch捕获
+      }
     }
     
     dialogVisible.value = false
@@ -497,7 +548,45 @@ const saveTransaction = async () => {
     if (error.response) {
       console.error('响应状态:', error.response.status)
       console.error('响应数据:', error.response.data)
-      ElMessage.error(`保存失败: ${error.response?.data?.detail || JSON.stringify(error.response.data)}`)
+      
+      // 改进错误信息处理
+      let errorMsg = '保存失败: '
+      
+      // 处理可能的嵌套错误结构
+      const formatErrorObject = (errorObj) => {
+        if (!errorObj) return '未知错误';
+        
+        if (typeof errorObj === 'string') return errorObj;
+        
+        if (Array.isArray(errorObj)) {
+          return errorObj.map(item => formatErrorObject(item)).join(', ');
+        }
+        
+        if (typeof errorObj === 'object') {
+          const details = [];
+          for (const key in errorObj) {
+            const value = formatErrorObject(errorObj[key]);
+            details.push(`${key}: ${value}`);
+          }
+          return details.join('; ');
+        }
+        
+        return String(errorObj);
+      };
+
+      if (error.response.data) {
+        if (error.response.data.detail) {
+          // 处理嵌套的detail对象
+          errorMsg += formatErrorObject(error.response.data.detail);
+        } else {
+          // 处理整个响应对象
+          errorMsg += formatErrorObject(error.response.data);
+        }
+      } else {
+        errorMsg += '服务器错误，请稍后重试';
+      }
+      
+      ElMessage.error(errorMsg)
     } else {
       ElMessage.error(`保存失败: ${error.message || '网络错误'}`)
     }
