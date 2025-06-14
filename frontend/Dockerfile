@@ -10,16 +10,16 @@ ENV NODE_ENV=production
 COPY package*.json ./
 
 # 清理node_modules并全新安装依赖
-RUN rm -rf node_modules && npm cache clean --force && npm install
+RUN npm install
 
-# 复制源代码（不包括node_modules）
+# 复制源代码
 COPY . .
 
-# 确保node_modules不会被覆盖（如果有的话）
-RUN rm -rf node_modules && npm install
+# 安装vite (确保它存在)
+RUN npm install --save-dev vite @vitejs/plugin-vue
 
-# 构建应用
-RUN npm run build
+# 构建应用 (使用npx确保找到正确的vite路径)
+RUN npx vite build
 
 # 生产阶段
 FROM nginx:stable-alpine AS production-stage
