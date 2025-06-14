@@ -3,8 +3,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 
-# Get database URL from environment variable or use default SQLite URL
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./daodao.db")
+# 修改为使用持久化存储路径
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/daodao.db")
 
 # Create SQLAlchemy engine
 engine = create_engine(

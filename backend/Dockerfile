@@ -1,4 +1,3 @@
- 
 FROM python:3.12-slim
 
 # 设置环境变量
@@ -10,6 +9,9 @@ WORKDIR /app
 
 # 更新pip 
 RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade pip
+
+# 创建数据目录
+RUN mkdir -p /app/data
 
 # 复制依赖文件
 COPY requirements.txt .
